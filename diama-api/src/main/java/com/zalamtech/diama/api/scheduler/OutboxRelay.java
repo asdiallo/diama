@@ -58,6 +58,10 @@ public class OutboxRelay {
     @Channel("sumsub-webhooks")
     Emitter<String> sumsubWebhooks;
 
+    @Inject
+    @Channel("swan-webhooks")
+    Emitter<String> swanWebhooks;
+
     @Scheduled(every = "2s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void relay() {
         final List<KafkaOutbox> pending = outbox.findPendingForProcessing(BATCH_SIZE);
@@ -86,6 +90,7 @@ public class OutboxRelay {
             case "audit-events" -> auditEvents;
             case "rate-updated" -> rateUpdated;
             case "sumsub-webhooks" -> sumsubWebhooks;
+            case "swan-webhooks" -> swanWebhooks;
             default -> throw new IllegalStateException("Topic outbox non configuré : " + topic);
         };
     }

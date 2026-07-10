@@ -9,6 +9,7 @@ import com.zalamtech.diama.common.exception.ResourceNotFoundException;
 import com.zalamtech.diama.domain.audit.AuditService;
 import com.zalamtech.diama.domain.audit.NotificationService;
 import com.zalamtech.diama.domain.user.IdentityGateway;
+import com.zalamtech.diama.domain.user.SwanAccountService;
 import com.zalamtech.diama.domain.user.User;
 import com.zalamtech.diama.domain.user.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -53,6 +54,9 @@ public class KycService {
 
     @Inject
     IdentityGateway identity;
+
+    @Inject
+    SwanAccountService swanAccounts;
 
     @Inject
     NotificationService notifications;
@@ -166,6 +170,17 @@ public class KycService {
         // La mutation ci-dessus déclenche trg_kyc_sync_keycloak (kafka_outbox → topic kyc-events).
 
         identity.updateKycLevel(user.getKeycloakId(), newLevel);
+
+        // Compte Swan dédié requis à partir du niveau 2 (collecte EUR). Best-effort :
+        // une panne Swan transitoire ne doit pas invalider la montée de niveau KYC déjà
+        // actée ; à reprendre via SwanAccountService.provisionAccount si besoin.
+        if (newLevel >= 2 && user.getSwanAccountId() == null) {
+            try {
+                swanAccounts.provisionAccount(userId);
+            } catch (RuntimeException e) {
+                log.error("Provisionnement du compte Swan impossible pour user={}", userId, e);
+            }
+        }
 
         audit.log(null, "KYC_LEVEL_CHANGED", "KYC", profile.getId(),
                 Map.of("kycLevel", beforeLevel, "verificationStatus", before.name()),

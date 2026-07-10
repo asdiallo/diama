@@ -76,6 +76,18 @@ quarkus:
       client-secret: ${KEYCLOAK_API_SECRET}
       grant-type: CLIENT_CREDENTIALS
 
+  # --- OAuth2 client_credentials sortant (REST clients partenaires) --------
+  # Jeton acquis / mis en cache / rafraîchi par quarkus-oidc-client-filter ;
+  # lié à SwanApiClient via @OidcClientFilter("swan").
+  oidc-client:
+    swan:
+      auth-server-url: ${SWAN_OAUTH_URL:https://oauth.swan.io}
+      client-id: ${SWAN_CLIENT_ID}
+      credentials:
+        secret: ${SWAN_CLIENT_SECRET}
+      grant:
+        type: client_credentials
+
   # --- Cache / sessions Redis (mot de passe requis) --------
   redis:
     hosts: ${REDIS_URL:redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379}
@@ -180,6 +192,11 @@ mp:
         topic: sumsub-webhooks
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
+      swan-webhooks:
+        connector: smallrye-kafka
+        topic: swan-webhooks
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
     incoming:
       thunes-callbacks:
         connector: smallrye-kafka
@@ -202,6 +219,13 @@ mp:
         auto.offset.reset: earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      swan-webhooks:
+        connector: smallrye-kafka
+        topic: swan-webhooks
+        group.id: diama-swan-webhooks
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 # ============================================================
 #  Configuration métier Diama (partenaires externes)
@@ -214,8 +238,8 @@ diama:
     webhook-secret: ${THUNES_WEBHOOK_SECRET}
   swan:
     base-url: ${SWAN_URL:https://api.swan.io}
-    client-id: ${SWAN_CLIENT_ID}
-    client-secret: ${SWAN_CLIENT_SECRET}
+    # Authentification : voir quarkus.oidc-client.swan.* (OAuth2 client_credentials).
+    webhook-secret: ${SWAN_WEBHOOK_SECRET}
   sumsub:
     base-url: ${SUMSUB_URL:https://api.sumsub.com}
     app-token: ${SUMSUB_APP_TOKEN}

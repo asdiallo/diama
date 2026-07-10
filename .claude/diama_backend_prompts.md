@@ -519,7 +519,6 @@ DTOs : KycInitDto, KycStatusDto, KycDocumentDto,
 ---
 
 ## ÉTAPE 9 — Module Swan (collecte EUR)
-# NEXT
 ```
 En te basant sur le contexte Diama (Swan.io pour la collecte EUR,
 IBAN dédié par utilisateur), génère le module Swan complet.
@@ -559,7 +558,7 @@ DTOs : SwanAccountRequest, SwanAccount, SwanTransferRequest,
 ---
 
 ## ÉTAPE 10 — Kafka outbox processor et audit
-
+# NEXT
 ```
 En te basant sur le contexte Diama (outbox pattern sur kafka_outbox),
 génère le processeur d'outbox et le service d'audit complet.

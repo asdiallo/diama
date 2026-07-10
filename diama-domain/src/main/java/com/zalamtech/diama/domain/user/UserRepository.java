@@ -21,4 +21,12 @@ public class UserRepository implements PanacheRepositoryBase<User, UUID> {
     public Optional<User> findByPhone(String phone) {
         return find("phone", phone).firstResultOptional();
     }
+
+    public Optional<User> findBySwanIban(String swanIban) {
+        return find("swanIban", swanIban).firstResultOptional();
+    }
+
+    public Optional<User> findBySwanAccountId(String swanAccountId) {
+        return find("swanAccountId", swanAccountId).firstResultOptional();
+    }
 }

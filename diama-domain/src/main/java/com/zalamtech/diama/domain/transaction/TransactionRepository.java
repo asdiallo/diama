@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
@@ -25,6 +26,17 @@ public class TransactionRepository implements PanacheRepositoryBase<Transaction,
 
     public Optional<Transaction> findByThunesExternalId(String thunesExternalId) {
         return find("thunesExternalId", thunesExternalId).firstResultOptional();
+    }
+
+    public Optional<Transaction> findBySwanTransferId(String swanTransferId) {
+        return find("swanTransferId", swanTransferId).firstResultOptional();
+    }
+
+    /** Transaction {@code INITIATED} d'un utilisateur pour un montant donné, la plus ancienne d'abord. */
+    public Optional<Transaction> findFirstInitiatedByUserAndAmount(UUID userId, BigDecimal amount) {
+        return find("userId = ?1 and status = ?2 and sourceAmount = ?3",
+                Sort.by("createdAt").ascending(), userId, TxStatus.INITIATED, amount)
+                .firstResultOptional();
     }
 
     /** Transactions dans un statut donné et plus anciennes qu'une borne (jobs de reprise). */
