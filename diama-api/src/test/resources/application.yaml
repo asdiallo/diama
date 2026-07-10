@@ -1,0 +1,33 @@
+# ============================================================
+#  Profil TEST — @QuarkusTest allégé.
+#  DevServices Postgres + Redis (testcontainers, docker requis) ;
+#  OIDC / Kafka / Elasticsearch neutralisés — la sécurité des
+#  tests passe par @TestSecurity (identité mockée).
+# ============================================================
+"%test":
+  quarkus:
+    # OIDC désactivé : @TestSecurity fournit l'identité.
+    oidc:
+      enabled: false
+    # Hibernate Search inactif (pas de conteneur Elasticsearch).
+    hibernate-search-orm:
+      active: false
+    # Kafka : pas de conteneur ; connexion paresseuse, health off.
+    kafka:
+      devservices:
+        enabled: false
+    reactive-messaging:
+      health:
+        enabled: false
+    # Keycloak DevService inutile (OIDC off) ; secret admin factice
+    # pour satisfaire la validation du client_credentials au démarrage.
+    keycloak:
+      devservices:
+        enabled: false
+      admin-client:
+        server-url: http://localhost:9080
+        client-secret: test-secret
+    log:
+      category:
+        "com.zalamtech.diama":
+          level: DEBUG

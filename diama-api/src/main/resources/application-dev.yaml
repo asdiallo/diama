@@ -1,0 +1,49 @@
+# ============================================================
+#  Profil DEV — connexion à la stack Docker locale
+#  (Postgres 5433, Keycloak 9080, Redis 6379, Elastic 9200).
+#  Les DevServices sont DÉSACTIVÉS : on utilise les conteneurs
+#  déjà démarrés, pas des conteneurs éphémères.
+# ============================================================
+"%dev":
+  quarkus:
+    # --- DevServices OFF (on cible la stack locale) --------
+    datasource:
+      devservices:
+        enabled: false
+    redis:
+      devservices:
+        enabled: false
+    keycloak:
+      devservices:
+        enabled: false
+    hibernate-search-orm:
+      elasticsearch:
+        devservices:
+          enabled: false
+    # Kafka non fourni localement → DevServices conservé.
+    kafka:
+      devservices:
+        enabled: true
+
+    # OIDC → Keycloak local realm transfer-app (héritent des défauts
+    # de application.yaml, rappelés ici pour lisibilité).
+    oidc:
+      auth-server-url: http://localhost:9080/realms/transfer-app
+
+    # --- Logs DEBUG ---------------------------------------
+    log:
+      level: INFO
+      category:
+        "com.zalamtech.diama":
+          level: DEBUG
+        "org.hibernate.SQL":
+          level: DEBUG
+    hibernate-orm:
+      log:
+        sql: true
+        format-sql: true
+
+    # --- Swagger UI toujours exposé -----------------------
+    swagger-ui:
+      always-include: true
+      path: /q/swagger-ui

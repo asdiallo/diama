@@ -1,0 +1,224 @@
+# ============================================================
+#  Diama — configuration principale (tous profils)
+#  Les valeurs sensibles sont injectées via variables d'env.
+# ============================================================
+quarkus:
+  application:
+    name: diama-api
+
+  # --- Base de données PostgreSQL 16 -----------------------
+  # NB : useUnicode / characterEncoding / serverTimezone sont des
+  # paramètres MySQL, invalides pour le driver PostgreSQL. UTF-8 est
+  # le défaut PG ; le fuseau est géré via hibernate-orm.jdbc.timezone.
+  datasource:
+    db-kind: postgresql
+    username: ${DB_USER:diama}
+    password: ${DB_PASSWORD:diama}
+    jdbc:
+      url: ${DB_URL:jdbc:postgresql://localhost:5433/diama}
+      max-size: 16
+
+  hibernate-orm:
+    # Le schéma est géré exclusivement par Flyway, jamais par Hibernate.
+    schema-management:
+      strategy: validate
+    jdbc:
+      timezone: Europe/Paris
+    log:
+      sql: false
+
+  # --- Recherche full-text (Elasticsearch) -----------------
+  hibernate-search-orm:
+    elasticsearch:
+      hosts: ${ELASTIC_HOSTS:localhost:9200}
+      protocol: http
+    # Pas d'entité @Indexed pour l'instant → indexation à la demande.
+    schema-management:
+      strategy: none
+
+  # --- Migrations Flyway -----------------------------------
+  flyway:
+    migrate-at-start: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # --- Indexation Jandex des modules multi-modules ---------
+  # Indispensable pour que Quarkus découvre entités/beans des
+  # modules diama-common / diama-domain / diama-infra.
+  index-dependency:
+    common:
+      group-id: com.zalamtech
+      artifact-id: diama-common
+    domain:
+      group-id: com.zalamtech
+      artifact-id: diama-domain
+    infra:
+      group-id: com.zalamtech
+      artifact-id: diama-infra
+
+  # --- Authentification OIDC (Keycloak realm transfer-app) --------
+  oidc:
+    auth-server-url: ${KEYCLOAK_URL:http://localhost:9080}/realms/${KEYCLOAK_REALM:transfer-app}
+    client-id: quarkus-api
+    credentials:
+      secret: ${KEYCLOAK_API_SECRET}
+    application-type: service
+    # Rôles Keycloak portés par le claim imbriqué realm_access/roles.
+    roles:
+      role-claim-path: realm_access/roles
+
+  # Admin client Keycloak (sync kyc_level → attribut utilisateur)
+  keycloak:
+    admin-client:
+      server-url: ${KEYCLOAK_URL:http://localhost:9080}
+      realm: ${KEYCLOAK_REALM:transfer-app}
+      client-id: quarkus-api
+      client-secret: ${KEYCLOAK_API_SECRET}
+      grant-type: CLIENT_CREDENTIALS
+
+  # --- Cache / sessions Redis (mot de passe requis) --------
+  redis:
+    hosts: ${REDIS_URL:redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379}
+    max-pool-size: 16
+    max-pool-waiting: -1
+
+  # --- Kafka (messaging, outbox) ---------------------------
+  kafka:
+    bootstrap:
+      servers: ${KAFKA_BROKERS:localhost:9092}
+
+  # --- HTTP + CORS -----------------------------------------
+  http:
+    port: 8080
+    cors:
+      enabled: true
+      access-control-allow-credentials: true
+      methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      origins:
+        - http://localhost:3000
+    auth:
+      permission:
+        # Callbacks partenaires : authentifiés par signature HMAC, pas par Keycloak.
+        public-webhooks:
+          paths: /webhooks/*
+          policy: permit
+
+  # --- OpenAPI / Swagger -----------------------------------
+  smallrye-openapi:
+    info-title: Diama API
+    info-version: 1.0.0
+    info-description: Plateforme de transfert d'argent Europe ↔ Afrique de l'Ouest
+
+  # --- Observabilité ---------------------------------------
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  # --- Image conteneur (build Docker / natif) --------------
+  container-image:
+    builder: docker
+    group: zalamtech
+    name: diama-api
+
+# ============================================================
+#  Clients REST (rest-client-reactive) → partenaires
+# ============================================================
+  rest-client:
+    thunes-api:
+      url: ${THUNES_URL:https://api.sandbox.thunes.com}
+      # Timeouts money-transfer : connect 5 s, read 30 s (payout parfois lent).
+      connect-timeout: 5000
+      read-timeout: 30000
+    swan-api:
+      url: ${SWAN_URL:https://api.swan.io}
+    sumsub-api:
+      url: ${SUMSUB_URL:https://api.sumsub.com}
+
+# ============================================================
+#  MicroProfile Reactive Messaging — canaux Kafka
+#  Les entrées kafka_outbox stockent déjà le payload en JSON (JSONB) : le
+#  relais d'outbox (OutboxRelay) republie ce texte tel quel → StringSerializer
+#  côté sortant, StringDeserializer côté entrant (parsing Jackson manuel dans
+#  les consumers, cf. diama-infra.kafka).
+# ============================================================
+mp:
+  messaging:
+    outgoing:
+      transfer-events:
+        connector: smallrye-kafka
+        topic: transfer-events
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      kyc-events:
+        connector: smallrye-kafka
+        topic: kyc-events
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      notifications:
+        connector: smallrye-kafka
+        topic: notifications
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      thunes-callbacks:
+        connector: smallrye-kafka
+        topic: thunes-callbacks
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      audit-events:
+        connector: smallrye-kafka
+        topic: audit-events
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      rate-updated:
+        connector: smallrye-kafka
+        topic: rate-updated
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+      sumsub-webhooks:
+        connector: smallrye-kafka
+        topic: sumsub-webhooks
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+    incoming:
+      thunes-callbacks:
+        connector: smallrye-kafka
+        topic: thunes-callbacks
+        group.id: diama-thunes-callbacks
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      notifications:
+        connector: smallrye-kafka
+        topic: notifications
+        group.id: diama-notifications
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      sumsub-webhooks:
+        connector: smallrye-kafka
+        topic: sumsub-webhooks
+        group.id: diama-sumsub-webhooks
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# ============================================================
+#  Configuration métier Diama (partenaires externes)
+# ============================================================
+diama:
+  thunes:
+    base-url: ${THUNES_URL:https://api.sandbox.thunes.com}
+    api-key: ${THUNES_API_KEY}
+    api-secret: ${THUNES_API_SECRET}
+    webhook-secret: ${THUNES_WEBHOOK_SECRET}
+  swan:
+    base-url: ${SWAN_URL:https://api.swan.io}
+    client-id: ${SWAN_CLIENT_ID}
+    client-secret: ${SWAN_CLIENT_SECRET}
+  sumsub:
+    base-url: ${SUMSUB_URL:https://api.sumsub.com}
+    app-token: ${SUMSUB_APP_TOKEN}
+    app-secret: ${SUMSUB_APP_SECRET}
+    webhook-secret: ${SUMSUB_WEBHOOK_SECRET}
+

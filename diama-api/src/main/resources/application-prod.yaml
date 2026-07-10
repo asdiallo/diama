@@ -1,0 +1,46 @@
+# ============================================================
+#  Profil PROD — durci pour déploiement Kubernetes / natif
+# ============================================================
+"%prod":
+  quarkus:
+    # --- Logs structurés JSON (quarkus-logging-json) -------
+    log:
+      level: INFO
+      console:
+        json:
+          ~: true
+          pretty-print: false
+      category:
+        "com.zalamtech.diama":
+          level: INFO
+
+    # --- Base de données (pool dimensionné prod) -----------
+    datasource:
+      jdbc:
+        min-size: 4
+        max-size: 32
+
+    # DevServices désactivés en production
+    devservices:
+      enabled: false
+
+    # --- Swagger UI désactivé ------------------------------
+    swagger-ui:
+      enable: false
+    smallrye-openapi:
+      enable: false
+
+    # --- Optimisations image native GraalVM ----------------
+    native:
+      additional-build-args: >-
+        -H:+UnlockExperimentalVMOptions,
+        --initialize-at-run-time=org.postgresql.sasl.ScramAuthenticator
+      enable-http-url-handler: true
+
+    # --- HTTP derrière l'ingress K8s -----------------------
+    http:
+      cors:
+        origins: ${CORS_ORIGINS}
+    # Le realm Keycloak est fourni par l'infra (pas de DevServices)
+    oidc:
+      auth-server-url: ${KEYCLOAK_URL}/realms/transfer-app

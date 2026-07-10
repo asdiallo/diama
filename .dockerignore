@@ -1,5 +1,9 @@
-*
-!build/*-runner
-!build/*-runner.jar
-!build/lib/*
-!build/quarkus-app/*
+# Le build natif compile les sources DANS l'image (multi-stage) :
+# on envoie le code mais on exclut les caches et artefacts locaux.
+.git
+.github
+.idea
+.gradle
+**/build
+*.iml
+README.md
