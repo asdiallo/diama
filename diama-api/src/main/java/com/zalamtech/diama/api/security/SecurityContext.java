@@ -4,6 +4,7 @@ import com.zalamtech.diama.common.dto.AuditContext;
 import com.zalamtech.diama.domain.user.AdminUser;
 import com.zalamtech.diama.domain.user.AdminUserRepository;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
@@ -29,6 +30,9 @@ public class SecurityContext {
 
     @Inject
     AdminUserRepository adminUsers;
+
+    @Inject
+    RoutingContext routingContext;
 
     /** {@code sub} du JWT (identifiant Keycloak de l'utilisateur), sous forme d'UUID. */
     public UUID getCurrentUserId() {
@@ -82,7 +86,19 @@ public class SecurityContext {
                 jwt.getSubject(),
                 getKeycloakSessionId(),
                 getClientId(),
-                getKycLevel());
+                getKycLevel(),
+                resolveIp());
+    }
+
+    private String resolveIp() {
+        if (routingContext == null || routingContext.request() == null) {
+            return null;
+        }
+        final String forwarded = routingContext.request().getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return routingContext.request().remoteAddress() != null ? routingContext.request().remoteAddress().host() : null;
     }
 
     private String claimString(String name) {

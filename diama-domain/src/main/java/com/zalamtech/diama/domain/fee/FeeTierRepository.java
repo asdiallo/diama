@@ -13,6 +13,13 @@ import java.util.UUID;
 @ApplicationScoped
 public class FeeTierRepository implements PanacheRepositoryBase<FeeTier, UUID> {
 
+    /** Grille tarifaire active (vue backoffice), groupée par corridor / tranche. */
+    public java.util.List<FeeTier> findAllActive() {
+        return list("isActive",
+                Sort.by("sourceCurrency").and("destCurrency").and("minAmount"),
+                true);
+    }
+
     /**
      * Palier actif correspondant au montant et au corridor à la date donnée.
      *

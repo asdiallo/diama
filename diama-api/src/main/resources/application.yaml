@@ -150,7 +150,7 @@ quarkus:
 # ============================================================
 #  MicroProfile Reactive Messaging — canaux Kafka
 #  Les entrées kafka_outbox stockent déjà le payload en JSON (JSONB) : le
-#  relais d'outbox (OutboxRelay) republie ce texte tel quel → StringSerializer
+#  relais d'outbox (OutboxProcessor) republie ce texte tel quel → StringSerializer
 #  côté sortant, StringDeserializer côté entrant (parsing Jackson manuel dans
 #  les consumers, cf. diama-infra.kafka).
 # ============================================================
@@ -198,6 +198,34 @@ mp:
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
     incoming:
+      transfer-events:
+        connector: smallrye-kafka
+        topic: transfer-events
+        group.id: diama-transfer-events
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      kyc-events:
+        connector: smallrye-kafka
+        topic: kyc-events
+        group.id: diama-kyc-events
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      rate-updated:
+        connector: smallrye-kafka
+        topic: rate-updated
+        group.id: diama-rate-updated
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      audit-events:
+        connector: smallrye-kafka
+        topic: audit-events
+        group.id: diama-audit-events
+        auto.offset.reset: earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
       thunes-callbacks:
         connector: smallrye-kafka
         topic: thunes-callbacks

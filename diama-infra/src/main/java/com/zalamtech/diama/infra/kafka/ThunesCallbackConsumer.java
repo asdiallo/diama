@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zalamtech.diama.common.exception.InvalidTransferStateException;
 import com.zalamtech.diama.common.exception.ResourceNotFoundException;
 import com.zalamtech.diama.domain.audit.NotificationService;
-import com.zalamtech.diama.domain.kyc.KycProfileRepository;
 import com.zalamtech.diama.domain.transaction.RFIService;
 import com.zalamtech.diama.domain.transaction.SwanRefundService;
 import com.zalamtech.diama.domain.transaction.ThunesTransferGateway;
@@ -29,9 +28,6 @@ public class ThunesCallbackConsumer {
 
     @Inject
     TransactionFSM fsm;
-
-    @Inject
-    KycProfileRepository kycProfiles;
 
     @Inject
     RFIService rfiService;
@@ -85,7 +81,8 @@ public class ThunesCallbackConsumer {
     }
 
     private void handleDelivered(Transaction tx) {
-        kycProfiles.incrementMonthlyUsed(tx.getUserId(), tx.getSourceAmount());
+        // monthly_used est incrémenté par TransferEventConsumer (topic transfer-events),
+        // déclenché par TransactionFSM.transition ci-dessus — pas ici, pour éviter un double comptage.
         notifications.send(tx.getUserId(), tx.getId(), "TRANSFER_DELIVERED",
                 Map.of("amount", tx.getDestAmount() != null ? tx.getDestAmount() : tx.getSourceAmount(),
                         "currency", tx.getDestCurrency()));

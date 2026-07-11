@@ -15,4 +15,9 @@ public class KeycloakIdentityGateway implements IdentityGateway {
     public void updateKycLevel(String keycloakId, int level) {
         keycloakAdmin.updateKycLevel(keycloakId, level);
     }
+
+    @Override
+    public void invalidateSession(String keycloakSessionId) {
+        keycloakAdmin.invalidateSession(keycloakSessionId);
+    }
 }

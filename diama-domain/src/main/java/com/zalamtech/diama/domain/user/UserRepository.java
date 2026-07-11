@@ -1,8 +1,13 @@
 package com.zalamtech.diama.domain.user;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,5 +33,36 @@ public class UserRepository implements PanacheRepositoryBase<User, UUID> {
 
     public Optional<User> findBySwanAccountId(String swanAccountId) {
         return find("swanAccountId", swanAccountId).firstResultOptional();
+    }
+
+    /** Recherche filtrée/paginée (backoffice) : statut exact, texte libre sur email/téléphone/nom. */
+    public List<User> searchAdmin(UserStatus status, String q, Sort sort, int page, int size) {
+        final AdminFilter filter = AdminFilter.of(status, q);
+        return find(filter.hql(), sort, filter.params())
+                .page(Page.of(page, size))
+                .list();
+    }
+
+    public long countAdmin(UserStatus status, String q) {
+        final AdminFilter filter = AdminFilter.of(status, q);
+        return count(filter.hql(), filter.params());
+    }
+
+    private record AdminFilter(String hql, Map<String, Object> params) {
+        static AdminFilter of(UserStatus status, String q) {
+            final StringBuilder hql = new StringBuilder("1=1");
+            final Map<String, Object> params = new LinkedHashMap<>();
+            if (status != null) {
+                hql.append(" and status = :status");
+                params.put("status", status);
+            }
+            if (q != null && !q.isBlank()) {
+                hql.append(" and (lower(email) like :q or lower(firstName) like :q "
+                        + "or lower(lastName) like :q or phone like :qRaw)");
+                params.put("q", "%" + q.toLowerCase(java.util.Locale.ROOT) + "%");
+                params.put("qRaw", "%" + q + "%");
+            }
+            return new AdminFilter(hql.toString(), params);
+        }
     }
 }

@@ -17,10 +17,10 @@ import java.util.UUID;
  *
  * <p>Chaque événement est sérialisé (états {@code before}/{@code after} en JSON
  * Jackson) puis inséré dans {@code kafka_outbox} sur le topic
- * {@code audit-events}. La publication Kafka effective est <b>asynchrone</b> :
- * elle est réalisée hors ligne par le poller d'outbox
- * ({@code KafkaOutboxRepository#findPendingForProcessing}), ce qui découple
- * l'écriture applicative de la disponibilité du broker.</p>
+ * {@code audit-events}. La publication Kafka effective est assurée par
+ * {@code OutboxProcessor} (module {@code diama-api}), et {@code AuditEventConsumer}
+ * (module {@code diama-infra}) matérialise chaque message dans la table
+ * {@code audit_events}.</p>
  *
  * <p><b>Atomicité</b> : {@link #log} rejoint la transaction de l'appelant
  * ({@code Transactional.TxType.MANDATORY}). L'entrée d'outbox est donc validée
@@ -45,7 +45,9 @@ public class AuditService {
     /**
      * Enregistre un événement d'audit dans l'outbox.
      *
-     * @param ctx        contexte Keycloak (acteur, session, client) ; peut être {@code null}
+     * @param ctx        contexte Keycloak (acteur, session, client, IP) ; peut être {@code null}
+     * @param userId     PK {@code users.id} de l'utilisateur final concerné, {@code null} si non applicable
+     * @param adminId    PK {@code admin_users.id} de l'agent backoffice à l'origine, {@code null} si action système/utilisateur
      * @param eventType  type d'événement métier, ex. {@code USER_PROFILE_UPDATED}
      * @param entityType type d'entité concernée, ex. {@code USER}, {@code BENEFICIARY}
      * @param entityId   identifiant de l'entité (sert aussi d'{@code aggregate_id})
@@ -53,9 +55,9 @@ public class AuditService {
      * @param after      état après mutation (sérialisé en JSON), {@code null} si suppression
      */
     @Transactional(Transactional.TxType.MANDATORY)
-    public void log(AuditContext ctx, String eventType, String entityType,
+    public void log(AuditContext ctx, UUID userId, UUID adminId, String eventType, String entityType,
                     UUID entityId, Object before, Object after) {
-        final String payload = buildPayload(ctx, eventType, entityType, entityId, before, after);
+        final String payload = buildPayload(ctx, userId, adminId, eventType, entityType, entityId, before, after);
 
         final KafkaOutbox entry = KafkaOutbox.builder()
                 .aggregateId(entityId)
@@ -71,19 +73,22 @@ public class AuditService {
     }
 
     /** Construit le document JSON d'audit (métadonnées + états before/after). */
-    private String buildPayload(AuditContext ctx, String eventType, String entityType,
+    private String buildPayload(AuditContext ctx, UUID userId, UUID adminId, String eventType, String entityType,
                                 UUID entityId, Object before, Object after) {
         final ObjectNode root = objectMapper.createObjectNode();
         root.put("eventType", eventType);
         root.put("entityType", entityType);
         root.put("entityId", entityId != null ? entityId.toString() : null);
         root.put("occurredAt", OffsetDateTime.now(ZoneOffset.UTC).toString());
+        root.put("userId", userId != null ? userId.toString() : null);
+        root.put("adminId", adminId != null ? adminId.toString() : null);
 
         if (ctx != null) {
             root.put("keycloakUserId", ctx.keycloakUserId());
             root.put("keycloakSessionId", ctx.keycloakSessionId());
             root.put("keycloakClient", ctx.keycloakClient());
             root.put("kycLevel", ctx.kycLevel());
+            root.put("ip", ctx.ip());
         }
 
         // valueToTree gère null → NullNode ; jamais d'exception ici.

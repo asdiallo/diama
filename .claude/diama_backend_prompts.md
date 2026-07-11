@@ -558,7 +558,6 @@ DTOs : SwanAccountRequest, SwanAccount, SwanTransferRequest,
 ---
 
 ## ÉTAPE 10 — Kafka outbox processor et audit
-# NEXT
 ```
 En te basant sur le contexte Diama (outbox pattern sur kafka_outbox),
 génère le processeur d'outbox et le service d'audit complet.
@@ -608,10 +607,10 @@ Génère :
 ---
 
 ## ÉTAPE 11 — Backoffice API (admin endpoints)
-
+# NEXT
 ```
 En te basant sur le contexte Diama, génère tous les endpoints du backoffice
-d'administration (Next.js consommera ces APIs).
+d'administration (React JS consommera ces APIs).
 
 Génère les resources suivantes (toutes sous /api/v1/admin/) :
 

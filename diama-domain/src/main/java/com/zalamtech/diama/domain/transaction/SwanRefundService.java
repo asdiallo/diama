@@ -70,7 +70,7 @@ public class SwanRefundService {
 
         fsm.transition(tx.getId(), TxStatus.REFUNDED, "Remboursement Swan " + refundRef, null);
 
-        audit.log(null, "TRANSFER_REFUNDED", "TRANSACTION", tx.getId(), null,
+        audit.log(null, tx.getUserId(), null, "TRANSFER_REFUNDED", "TRANSACTION", tx.getId(), null,
                 Map.of("swanRefundRef", refundRef, "amount", tx.getSourceAmount()));
 
         notifications.send(tx.getUserId(), tx.getId(), "TRANSFER_REFUNDED",

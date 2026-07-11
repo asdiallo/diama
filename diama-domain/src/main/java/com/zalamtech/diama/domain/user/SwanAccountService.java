@@ -48,7 +48,7 @@ public class SwanAccountService {
         user.setSwanAccountId(account.accountId());
         user.setSwanIban(account.iban());
 
-        audit.log(null, "SWAN_ACCOUNT_PROVISIONED", "USER", userId, null,
+        audit.log(null, userId, null, "SWAN_ACCOUNT_PROVISIONED", "USER", userId, null,
                 Map.of("swanAccountId", account.accountId(), "iban", account.iban()));
 
         log.info("Compte Swan provisionné : user={} account={} iban={}", userId, account.accountId(), account.iban());

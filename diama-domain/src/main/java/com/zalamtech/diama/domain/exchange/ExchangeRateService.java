@@ -184,7 +184,8 @@ public class ExchangeRateService {
         enqueueRateUpdated(rate);
     }
 
-    private void enqueueRateUpdated(ExchangeRate rate) {
+    /** Package-privé : réutilisé par {@code AdminRateService} pour republier après une modification manuelle. */
+    void enqueueRateUpdated(ExchangeRate rate) {
         final ObjectNode payload = mapper.createObjectNode();
         payload.put("source", rate.getSourceCurrency());
         payload.put("dest", rate.getDestCurrency());

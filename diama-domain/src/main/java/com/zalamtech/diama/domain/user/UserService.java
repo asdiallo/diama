@@ -91,7 +91,7 @@ public class UserService {
         }
 
         final UserProfileDto after = toProfileDto(user);
-        audit.log(ctx(), "USER_PROFILE_UPDATED", "USER", userId, before, after);
+        audit.log(ctx(), userId, null, "USER_PROFILE_UPDATED", "USER", userId, before, after);
         return after;
     }
 
@@ -127,7 +127,7 @@ public class UserService {
         beneficiaries.persist(beneficiary);
 
         final BeneficiaryDto result = toBeneficiaryDto(beneficiary);
-        audit.log(ctx(), "BENEFICIARY_ADDED", "BENEFICIARY", beneficiary.getId(), null, result);
+        audit.log(ctx(), userId, null, "BENEFICIARY_ADDED", "BENEFICIARY", beneficiary.getId(), null, result);
         return result;
     }
 
@@ -143,7 +143,7 @@ public class UserService {
         final BeneficiaryDto before = toBeneficiaryDto(beneficiary);
         beneficiary.setIsActive(Boolean.FALSE);
         final BeneficiaryDto after = toBeneficiaryDto(beneficiary);
-        audit.log(ctx(), "BENEFICIARY_DEACTIVATED", "BENEFICIARY", beneficiaryId, before, after);
+        audit.log(ctx(), userId, null, "BENEFICIARY_DEACTIVATED", "BENEFICIARY", beneficiaryId, before, after);
     }
 
     // ---------------------------------------------------------------------
@@ -160,7 +160,7 @@ public class UserService {
             existing.setPlatform(dto.platform());
             existing.setAppVersion(dto.appVersion());
             existing.setIsActive(Boolean.TRUE);
-            audit.log(ctx(), "DEVICE_REACTIVATED", "DEVICE", existing.getId(), null, dto);
+            audit.log(ctx(), userId, null, "DEVICE_REACTIVATED", "DEVICE", existing.getId(), null, dto);
             return;
         }
 
@@ -172,7 +172,7 @@ public class UserService {
                 .isActive(Boolean.TRUE)
                 .build();
         devices.persist(device);
-        audit.log(ctx(), "DEVICE_REGISTERED", "DEVICE", device.getId(), null, dto);
+        audit.log(ctx(), userId, null, "DEVICE_REGISTERED", "DEVICE", device.getId(), null, dto);
     }
 
     // ---------------------------------------------------------------------

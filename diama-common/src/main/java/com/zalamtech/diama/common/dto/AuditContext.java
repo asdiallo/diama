@@ -8,11 +8,13 @@ package com.zalamtech.diama.common.dto;
  * @param keycloakSessionId {@code sid} du JWT
  * @param keycloakClient    {@code azp} du JWT ('mobile-app' | 'backoffice-app' | 'quarkus-api')
  * @param kycLevel          niveau KYC courant (claim custom), 0 si absent
+ * @param ip                adresse IP de la requête d'origine, {@code null} hors contexte HTTP
  */
 public record AuditContext(
         String keycloakUserId,
         String keycloakSessionId,
         String keycloakClient,
-        int kycLevel
+        int kycLevel,
+        String ip
 ) {
 }

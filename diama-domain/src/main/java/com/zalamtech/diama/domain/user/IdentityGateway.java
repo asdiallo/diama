@@ -10,4 +10,7 @@ public interface IdentityGateway {
 
     /** Propage le niveau KYC dans le claim custom {@code kyc_level} de l'utilisateur Keycloak. */
     void updateKycLevel(String keycloakId, int level);
+
+    /** Invalide une session Keycloak (déconnexion forcée, ex. action backoffice). */
+    void invalidateSession(String keycloakSessionId);
 }

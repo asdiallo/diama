@@ -82,7 +82,7 @@ public class RFIService {
         notifications.send(tx.getUserId(), tx.getId(), "RFI_DOCUMENT_REQUIRED",
                 Map.of("thunesRfiId", rfi.thunesRfiId(), "description", rfi.description() != null ? rfi.description() : ""));
 
-        audit.log(null, "RFI_PENDING_REVIEW", "TRANSACTION", tx.getId(), null,
+        audit.log(null, tx.getUserId(), null, "RFI_PENDING_REVIEW", "TRANSACTION", tx.getId(), null,
                 Map.of("thunesRfiId", rfi.thunesRfiId(), "expiresAt", String.valueOf(rfi.expiresAt())));
 
         log.info("RFI Thunes ouverte : {} (tx={})", rfi.thunesRfiId(), tx.getId());

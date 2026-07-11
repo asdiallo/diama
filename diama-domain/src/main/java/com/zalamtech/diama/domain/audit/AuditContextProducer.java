@@ -1,7 +1,9 @@
 package com.zalamtech.diama.domain.audit;
 
 import com.zalamtech.diama.common.dto.AuditContext;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -23,6 +25,9 @@ public class AuditContextProducer {
     @Inject
     JsonWebToken jwt;
 
+    @Inject
+    Instance<RoutingContext> routingContext;
+
     @Produces
     @Dependent
     public AuditContext currentAuditContext() {
@@ -30,7 +35,8 @@ public class AuditContextProducer {
                 jwt.getSubject(),
                 claim("sid"),
                 claim("azp"),
-                kycLevel());
+                kycLevel(),
+                resolveIp());
     }
 
     private String claim(String name) {
@@ -58,5 +64,17 @@ public class AuditContextProducer {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private String resolveIp() {
+        if (!routingContext.isResolvable() || routingContext.get() == null || routingContext.get().request() == null) {
+            return null;
+        }
+        final var request = routingContext.get().request();
+        final String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.remoteAddress() != null ? request.remoteAddress().host() : null;
     }
 }

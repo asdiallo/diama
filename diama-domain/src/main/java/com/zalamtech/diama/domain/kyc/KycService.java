@@ -8,8 +8,6 @@ import com.zalamtech.diama.common.dto.SumsubWebhookPayload;
 import com.zalamtech.diama.common.exception.ResourceNotFoundException;
 import com.zalamtech.diama.domain.audit.AuditService;
 import com.zalamtech.diama.domain.audit.NotificationService;
-import com.zalamtech.diama.domain.user.IdentityGateway;
-import com.zalamtech.diama.domain.user.SwanAccountService;
 import com.zalamtech.diama.domain.user.User;
 import com.zalamtech.diama.domain.user.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,13 +24,16 @@ import java.util.UUID;
 
 /**
  * Orchestration du parcours KYC (Sumsub) : initialisation, réception des
- * verdicts (webhook ou revue manuelle), et montée de niveau — avec
- * propagation du {@code kyc_level} vers Keycloak.
+ * verdicts (webhook ou revue manuelle), et montée de niveau.
  *
- * <p>Les mutations de {@code kyc_profiles} déclenchent le trigger SQL
- * {@code sync_kyc_level_to_keycloak}, qui enfile automatiquement un événement
+ * <p>La propagation vers Keycloak ({@code kyc_level}) et le provisionnement
+ * Swan (niveau 2+) ne sont <b>pas</b> déclenchés directement ici : chaque
+ * mutation de {@code kyc_profiles} qui change {@code kyc_level} ou
+ * {@code verification_status} déclenche le trigger SQL
+ * {@code sync_kyc_level_to_keycloak}, qui enfile un événement
  * {@code KYC_LEVEL_CHANGED} dans {@code kafka_outbox} (topic {@code kyc-events})
- * — indépendamment de l'appel synchrone à {@link KeycloakAdminService} fait ici.</p>
+ * — {@code KycEventConsumer} (module {@code diama-infra}) est le seul point
+ * qui agit dessus, évitant tout double déclenchement.</p>
  */
 @Slf4j
 @ApplicationScoped
@@ -51,12 +52,6 @@ public class KycService {
 
     @Inject
     SumsubGateway sumsub;
-
-    @Inject
-    IdentityGateway identity;
-
-    @Inject
-    SwanAccountService swanAccounts;
 
     @Inject
     NotificationService notifications;
@@ -138,9 +133,9 @@ public class KycService {
 
         if ("GREEN".equalsIgnoreCase(review.reviewAnswer())) {
             final int newLevel = Math.min(profile.getKycLevel() + 1, KycLevels.MAX_LEVEL);
-            upgradeKycLevel(profile.getUserId(), newLevel);
+            upgradeKycLevel(profile.getUserId(), newLevel, null);
         } else if ("RED".equalsIgnoreCase(review.reviewAnswer())) {
-            setRejected(profile, formatRejection(review));
+            setRejected(profile, formatRejection(review), null);
         } else {
             log.info("Webhook applicantReviewed sans verdict exploitable (applicant={}, reviewAnswer={})",
                     payload.applicantId(), review.reviewAnswer());
@@ -154,10 +149,19 @@ public class KycService {
     /** Fait passer l'utilisateur au niveau KYC indiqué (Sumsub GREEN ou revue manuelle approuvée). */
     @Transactional
     public void upgradeKycLevel(UUID userId, int newLevel) {
+        upgradeKycLevel(userId, newLevel, null);
+    }
+
+    /**
+     * Variante interne portant l'agent backoffice à l'origine (revue manuelle),
+     * {@code null} pour une montée de niveau déclenchée par Sumsub. Appelée
+     * uniquement en interne (self-invocation) : pas d'intercepteur transactionnel
+     * propre nécessaire, elle rejoint la transaction déjà ouverte par
+     * l'appelant ({@link #upgradeKycLevel(UUID, int)} ou {@link #manualReview}).
+     */
+    private void upgradeKycLevel(UUID userId, int newLevel, UUID adminId) {
         final KycProfile profile = kycProfiles.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profil KYC", userId));
-        final User user = users.findByIdOptional(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", userId));
 
         final KycVerificationStatus before = profile.getVerificationStatus();
         final short beforeLevel = profile.getKycLevel();
@@ -167,22 +171,12 @@ public class KycService {
         profile.setVerificationStatus(KycVerificationStatus.APPROVED);
         profile.setLevelGrantedAt(OffsetDateTime.now(ZoneOffset.UTC));
         profile.setRejectionReason(null);
-        // La mutation ci-dessus déclenche trg_kyc_sync_keycloak (kafka_outbox → topic kyc-events).
+        profile.setReviewedBy(adminId);
+        // La mutation ci-dessus déclenche trg_kyc_sync_keycloak (kafka_outbox → topic
+        // kyc-events) : c'est KycEventConsumer, pas ce service, qui propage vers
+        // Keycloak et provisionne le compte Swan (niveau 2+).
 
-        identity.updateKycLevel(user.getKeycloakId(), newLevel);
-
-        // Compte Swan dédié requis à partir du niveau 2 (collecte EUR). Best-effort :
-        // une panne Swan transitoire ne doit pas invalider la montée de niveau KYC déjà
-        // actée ; à reprendre via SwanAccountService.provisionAccount si besoin.
-        if (newLevel >= 2 && user.getSwanAccountId() == null) {
-            try {
-                swanAccounts.provisionAccount(userId);
-            } catch (RuntimeException e) {
-                log.error("Provisionnement du compte Swan impossible pour user={}", userId, e);
-            }
-        }
-
-        audit.log(null, "KYC_LEVEL_CHANGED", "KYC", profile.getId(),
+        audit.log(null, userId, adminId, "KYC_LEVEL_CHANGED", "KYC", profile.getId(),
                 Map.of("kycLevel", beforeLevel, "verificationStatus", before.name()),
                 Map.of("kycLevel", newLevel, "verificationStatus", KycVerificationStatus.APPROVED.name()));
 
@@ -199,11 +193,9 @@ public class KycService {
 
         if (approved) {
             final int newLevel = Math.min(profile.getKycLevel() + 1, KycLevels.MAX_LEVEL);
-            upgradeKycLevel(profile.getUserId(), newLevel);
-            profile.setReviewedBy(adminId);
+            upgradeKycLevel(profile.getUserId(), newLevel, adminId);
         } else {
-            setRejected(profile, reason);
-            profile.setReviewedBy(adminId);
+            setRejected(profile, reason, adminId);
         }
     }
 
@@ -231,12 +223,15 @@ public class KycService {
     //  Aides internes
     // ---------------------------------------------------------------------
 
-    private void setRejected(KycProfile profile, String reason) {
+    private void setRejected(KycProfile profile, String reason, UUID adminId) {
         profile.setVerificationStatus(KycVerificationStatus.REJECTED);
         profile.setRejectionReason(reason);
-        // Mutation → trg_kyc_sync_keycloak (verification_status a changé).
+        profile.setReviewedBy(adminId);
+        // Mutation → trg_kyc_sync_keycloak (verification_status a changé, kyc_level non modifié :
+        // KycEventConsumer ignore ce cas, aucun statut Keycloak/Swan à propager sur un rejet).
 
-        audit.log(null, "KYC_REJECTED", "KYC", profile.getId(), null, Map.of("reason", reason != null ? reason : ""));
+        audit.log(null, profile.getUserId(), adminId, "KYC_REJECTED", "KYC", profile.getId(), null,
+                Map.of("reason", reason != null ? reason : ""));
         notifications.send(profile.getUserId(), null, "KYC_REJECTED", Map.of("reason", reason != null ? reason : ""));
 
         log.info("Dossier KYC rejeté : profile={} raison={}", profile.getId(), reason);

@@ -94,7 +94,7 @@ public class FundsVerificationService {
     @Transactional
     public void alertBackoffice(List<OrphanedFund> orphans) {
         for (OrphanedFund orphan : orphans) {
-            audit.log(null, "SWAN_ORPHANED_FUND", "SWAN_ACCOUNT", orphan.userId(), null, orphan);
+            audit.log(null, orphan.userId(), null, "SWAN_ORPHANED_FUND", "SWAN_ACCOUNT", null, null, orphan);
         }
         log.warn("{} fonds Swan orphelins détectés — revue backoffice nécessaire", orphans.size());
     }
