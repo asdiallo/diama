@@ -45,35 +45,35 @@ public class OutboxProcessor {
     AuditService audit;
 
     @Inject
-    @Channel("transfer-events")
+    @Channel("transfer-events-out")
     Emitter<String> transferEvents;
 
     @Inject
-    @Channel("kyc-events")
+    @Channel("kyc-events-out")
     Emitter<String> kycEvents;
 
     @Inject
-    @Channel("notifications")
+    @Channel("notifications-out")
     Emitter<String> notifications;
 
     @Inject
-    @Channel("thunes-callbacks")
+    @Channel("thunes-callbacks-out")
     Emitter<String> thunesCallbacks;
 
     @Inject
-    @Channel("audit-events")
+    @Channel("audit-events-out")
     Emitter<String> auditEvents;
 
     @Inject
-    @Channel("rate-updated")
+    @Channel("rate-updated-out")
     Emitter<String> rateUpdated;
 
     @Inject
-    @Channel("sumsub-webhooks")
+    @Channel("sumsub-webhooks-out")
     Emitter<String> sumsubWebhooks;
 
     @Inject
-    @Channel("swan-webhooks")
+    @Channel("swan-webhooks-out")
     Emitter<String> swanWebhooks;
 
     @Scheduled(every = "5s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)

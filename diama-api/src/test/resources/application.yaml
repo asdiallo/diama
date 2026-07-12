@@ -9,6 +9,15 @@
     # OIDC désactivé : @TestSecurity fournit l'identité.
     oidc:
       enabled: false
+    # Client OAuth2 sortant Swan neutralisé (pas d'IdP en test).
+    # Les valeurs factices évitent l'échec d'expansion des ${SWAN_*}.
+    oidc-client:
+      swan:
+        client-enabled: false
+        auth-server-url: http://localhost:9999
+        client-id: test-swan
+        credentials:
+          secret: test-secret
     # Hibernate Search inactif (pas de conteneur Elasticsearch).
     hibernate-search-orm:
       active: false
@@ -19,6 +28,10 @@
     reactive-messaging:
       health:
         enabled: false
+    # Schedulers OFF : les entrées kafka_outbox restent PENDING, les tests
+    # de flux pilotent eux-mêmes les consumers (déterminisme).
+    scheduler:
+      enabled: false
     # Keycloak DevService inutile (OIDC off) ; secret admin factice
     # pour satisfaire la validation du client_credentials au démarrage.
     keycloak:
@@ -31,3 +44,17 @@
       category:
         "com.zalamtech.diama":
           level: DEBUG
+
+  # Secrets partenaires factices : les valeurs de prod sont des expansions
+  # ${ENV} sans défaut, qui échoueraient à la résolution en test.
+  diama:
+    thunes:
+      api-key: test-thunes-key
+      api-secret: test-thunes-secret
+      webhook-secret: test-thunes-webhook-secret
+    swan:
+      webhook-secret: test-swan-webhook-secret
+    sumsub:
+      app-token: test-sumsub-token
+      app-secret: test-sumsub-secret
+      webhook-secret: test-sumsub-webhook-secret

@@ -23,6 +23,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Gestion des transferts de l'utilisateur connecté (rôle {@code user}).
@@ -38,6 +41,8 @@ import java.util.UUID;
 @RolesAllowed("user")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "transfers")
+@SecurityRequirement(name = "bearerAuth")
 public class TransferResource {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -52,6 +57,7 @@ public class TransferResource {
     JsonWebToken jwt;
 
     /** POST / — initie un transfert. Renvoie {@code 201 Created} avec le transfert. */
+    @Operation(summary = "Initiation d'un transfert depuis un devis")
     @POST
     public Response initiate(@Valid CreateTransferRequest request) {
         final TransferDto created = transfers.initiateTransfer(currentUserId(), request);
@@ -59,6 +65,7 @@ public class TransferResource {
     }
 
     /** GET / — historique paginé, les plus récents d'abord. */
+    @Operation(summary = "Historique paginé des transferts")
     @GET
     public Page<TransferDto> list(@QueryParam("page") @DefaultValue("0") int page,
                                   @QueryParam("size") @DefaultValue("20") int size) {
@@ -66,6 +73,7 @@ public class TransferResource {
     }
 
     /** GET /{id} — détail d'un transfert appartenant à l'utilisateur. */
+    @Operation(summary = "Détail d'un transfert")
     @GET
     @Path("/{id}")
     public TransferDto get(@PathParam("id") UUID id) {
@@ -73,6 +81,7 @@ public class TransferResource {
     }
 
     /** DELETE /{id} — annule un transfert encore au statut {@code INITIATED}. */
+    @Operation(summary = "Annulation d'un transfert INITIATED")
     @DELETE
     @Path("/{id}")
     public Response cancel(@PathParam("id") UUID id) {

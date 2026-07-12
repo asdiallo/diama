@@ -12,6 +12,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Consultation publique des taux de change et des opérateurs de payout.
@@ -19,12 +21,14 @@ import java.util.List;
  */
 @Path("/api/v1/rates")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "rates")
 public class ExchangeRateResource {
 
     @Inject
     ExchangeRateService exchangeRates;
 
     /** GET /current?from=EUR&to=GNF&payerId=1234 — taux du jour d'un corridor. */
+    @Operation(summary = "Taux du jour d'un corridor")
     @GET
     @Path("/current")
     public RateDto current(@QueryParam("from") String from,
@@ -41,6 +45,7 @@ public class ExchangeRateResource {
     }
 
     /** GET /payers?country=GN — opérateurs Thunes actifs d'un pays. */
+    @Operation(summary = "Opérateurs de payout actifs d'un pays")
     @GET
     @Path("/payers")
     public List<PayerDto> payers(@QueryParam("country") String country) {

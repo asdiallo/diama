@@ -31,6 +31,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Administration des transactions (rôles {@code ops-agent}, {@code admin}).
@@ -47,6 +50,8 @@ import java.util.UUID;
 @RolesAllowed({"ops-agent", "admin"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminTransactionResource {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -57,6 +62,7 @@ public class AdminTransactionResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Recherche paginée des transactions")
     @GET
     public Page<AdminTransactionDto> list(@QueryParam("userId") UUID userId,
                                           @QueryParam("status") String status,
@@ -80,12 +86,14 @@ public class AdminTransactionResource {
         return Page.of(content, clampedPage, clampedSize, total);
     }
 
+    @Operation(summary = "Détail + historique FSM d'une transaction")
     @GET
     @Path("/{id}")
     public TransactionDetailDto get(@PathParam("id") UUID id) {
         return adminTransactions.getDetail(id);
     }
 
+    @Operation(summary = "Transition manuelle de statut (motif obligatoire)")
     @POST
     @Path("/{id}/force-status")
     public Response forceStatus(@PathParam("id") UUID id, @Valid ForceStatusRequest request) {
@@ -93,12 +101,14 @@ public class AdminTransactionResource {
         return Response.noContent().build();
     }
 
+    @Operation(summary = "RFI Thunes en attente de réponse")
     @GET
     @Path("/rfi-pending")
     public List<RfiPendingDto> rfiPending() {
         return adminTransactions.listPendingRfi();
     }
 
+    @Operation(summary = "Soumission des documents/infos d'une RFI")
     @POST
     @Path("/{id}/rfi/{rfiId}/submit")
     public Response submitRfi(@PathParam("id") UUID id, @PathParam("rfiId") UUID rfiId,

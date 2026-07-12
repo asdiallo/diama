@@ -32,6 +32,9 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Consultation d'audit backoffice (rôle {@code admin} uniquement).
@@ -46,6 +49,8 @@ import java.util.stream.Stream;
 @Path("/api/v1/admin/audit")
 @RolesAllowed("admin")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminAuditResource {
 
     private static final int MAX_PAGE_SIZE = 200;
@@ -65,6 +70,7 @@ public class AdminAuditResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Journal d'audit paginé et filtrable")
     @GET
     public Page<AuditEventDto> list(@QueryParam("userId") UUID userId,
                                     @QueryParam("eventType") String eventType,
@@ -86,6 +92,7 @@ public class AdminAuditResource {
     }
 
     /** Export CSV en flux (transaction ouverte manuellement : le curseur ne survit pas à la fin de la méthode). */
+    @Operation(summary = "Export CSV des 30 derniers jours")
     @GET
     @Path("/export")
     @Produces("text/csv")
@@ -96,12 +103,14 @@ public class AdminAuditResource {
                 .build();
     }
 
+    @Operation(summary = "Sessions Keycloak actives")
     @GET
     @Path("/sessions")
     public List<ActiveSessionDto> sessions() {
         return activeSessions.findActive();
     }
 
+    @Operation(summary = "Invalidation d'une session Keycloak")
     @DELETE
     @Path("/sessions/{keycloakSessionId}")
     public Response endSession(@PathParam("keycloakSessionId") String keycloakSessionId) {

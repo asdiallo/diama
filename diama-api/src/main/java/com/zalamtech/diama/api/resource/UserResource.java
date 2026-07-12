@@ -27,6 +27,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Endpoints du profil de l'utilisateur connecté (application mobile).
@@ -40,6 +43,8 @@ import java.util.UUID;
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "users")
+@SecurityRequirement(name = "bearerAuth")
 public class UserResource {
 
     @Inject
@@ -52,6 +57,7 @@ public class UserResource {
     JsonWebToken jwt;
 
     /** GET /me — profil de l'utilisateur connecté. */
+    @Operation(summary = "Profil de l'utilisateur connecté")
     @GET
     @Path("/me")
     public UserProfileDto me() {
@@ -59,6 +65,7 @@ public class UserResource {
     }
 
     /** PUT /me — mise à jour partielle du profil. */
+    @Operation(summary = "Mise à jour partielle du profil")
     @PUT
     @Path("/me")
     public UserProfileDto updateMe(@Valid UserUpdateDto dto) {
@@ -66,6 +73,7 @@ public class UserResource {
     }
 
     /** GET /me/beneficiaries — bénéficiaires actifs. */
+    @Operation(summary = "Bénéficiaires actifs")
     @GET
     @Path("/me/beneficiaries")
     public List<BeneficiaryDto> beneficiaries() {
@@ -73,6 +81,7 @@ public class UserResource {
     }
 
     /** POST /me/beneficiaries — ajout d'un bénéficiaire. */
+    @Operation(summary = "Ajout d'un bénéficiaire")
     @POST
     @Path("/me/beneficiaries")
     public Response addBeneficiary(@Valid CreateBeneficiaryDto dto) {
@@ -81,6 +90,7 @@ public class UserResource {
     }
 
     /** DELETE /me/beneficiaries/{id} — désactivation (soft delete). */
+    @Operation(summary = "Désactivation d'un bénéficiaire")
     @DELETE
     @Path("/me/beneficiaries/{id}")
     public Response deactivateBeneficiary(@PathParam("id") UUID id) {
@@ -89,6 +99,7 @@ public class UserResource {
     }
 
     /** POST /me/devices — enregistrement d'un token push. */
+    @Operation(summary = "Enregistrement d'un appareil (push)")
     @POST
     @Path("/me/devices")
     public Response registerDevice(@Valid DeviceRegistrationDto dto) {
@@ -97,6 +108,7 @@ public class UserResource {
     }
 
     /** GET /me/limits — plafonds KYC courants (montant testé = 0). */
+    @Operation(summary = "Plafonds mensuels KYC")
     @GET
     @Path("/me/limits")
     public LimitCheckResult limits() {

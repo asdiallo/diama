@@ -26,4 +26,11 @@ dependencies {
     // Tests de sécurité (@TestSecurity + JWT claims)
     testImplementation("io.quarkus:quarkus-test-security")
     testImplementation("io.quarkus:quarkus-test-security-jwt")
+
+    // @InjectMock (Mockito) — substitution des ports partenaires dans les tests de flux.
+    testImplementation("io.quarkus:quarkus-junit5-mockito")
+
+    // Stubs HTTP des APIs partenaires (variante standalone : dépendances relocalisées,
+    // pas de conflit Jetty/Jackson avec Quarkus).
+    testImplementation("org.wiremock:wiremock-standalone:3.10.0")
 }

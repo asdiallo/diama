@@ -3,15 +3,12 @@ package com.zalamtech.diama.domain.transaction;
 import com.zalamtech.diama.domain.support.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -36,8 +33,7 @@ public class RfiRequest extends BaseEntity {
     private Long thunesRfiId;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::rfi_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "rfi_status")
     private RfiStatus status = RfiStatus.PENDING;
 

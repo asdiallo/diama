@@ -6,8 +6,6 @@ import com.zalamtech.diama.domain.user.SessionClientConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,8 +39,7 @@ public class Transaction extends BaseEntity {
     private UUID beneficiaryId;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::tx_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "tx_status")
     private TxStatus status = TxStatus.INITIATED;
 

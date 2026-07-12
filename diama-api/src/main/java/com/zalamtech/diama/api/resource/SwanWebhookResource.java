@@ -33,6 +33,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Réception des webhooks Swan (réception / rejet de virements sur les comptes
@@ -50,6 +52,7 @@ import java.util.UUID;
 @Path("/webhooks/swan")
 @PermitAll
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "webhooks")
 public class SwanWebhookResource {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
@@ -72,6 +75,7 @@ public class SwanWebhookResource {
     @ConfigProperty(name = "diama.swan.webhook-secret")
     String webhookSecret;
 
+    @Operation(summary = "Webhook Swan (signature HMAC, traitement asynchrone)")
     @POST
     @Transactional
     public Response receive(String rawBody, @HeaderParam("X-Swan-Signature") String signature) {

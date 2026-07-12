@@ -30,6 +30,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Réception des callbacks Thunes (changement d'état d'une transaction de payout).
@@ -45,6 +47,7 @@ import java.util.Locale;
 @Path("/webhooks/thunes")
 @PermitAll
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "webhooks")
 public class ThunesWebhookResource {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
@@ -63,6 +66,7 @@ public class ThunesWebhookResource {
     @ConfigProperty(name = "diama.thunes.webhook-secret")
     String webhookSecret;
 
+    @Operation(summary = "Callback Thunes (signature HMAC, traitement asynchrone)")
     @POST
     @Transactional
     public Response receive(String rawBody, @HeaderParam("X-Thunes-Signature") String signature) {

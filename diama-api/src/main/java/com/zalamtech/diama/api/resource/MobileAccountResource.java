@@ -17,11 +17,16 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /** Endpoints de l'application mobile (rôle {@code user}). */
 @Path("/api/mobile/me")
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
+@Tag(name = "users")
+@SecurityRequirement(name = "bearerAuth")
 public class MobileAccountResource {
 
     @Inject
@@ -52,6 +57,7 @@ public class MobileAccountResource {
     ) {
     }
 
+    @Operation(summary = "Compte mobile courant (profil + KYC + session)")
     @GET
     @Transactional
     public MeResponse me() {

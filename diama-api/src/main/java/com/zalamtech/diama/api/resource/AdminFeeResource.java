@@ -20,6 +20,9 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Administration de la grille tarifaire (rôle {@code admin}).
@@ -35,6 +38,8 @@ import java.util.UUID;
 @RolesAllowed("admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminFeeResource {
 
     @Inject
@@ -43,23 +48,27 @@ public class AdminFeeResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Grille tarifaire active")
     @GET
     public List<AdminFeeDto> list() {
         return adminFees.listActive();
     }
 
+    @Operation(summary = "Création d'un palier de frais")
     @POST
     public Response create(@Valid CreateFeeTierRequest request) {
         final AdminFeeDto created = adminFees.create(request, security.getCurrentAdminId());
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
+    @Operation(summary = "Remplacement d'un palier (versionné)")
     @PUT
     @Path("/{id}")
     public AdminFeeDto update(@PathParam("id") UUID id, @Valid CreateFeeTierRequest request) {
         return adminFees.update(id, request, security.getCurrentAdminId());
     }
 
+    @Operation(summary = "Désactivation d'un palier")
     @DELETE
     @Path("/{id}")
     public Response deactivate(@PathParam("id") UUID id) {

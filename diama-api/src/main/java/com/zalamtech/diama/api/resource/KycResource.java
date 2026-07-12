@@ -15,6 +15,9 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Parcours KYC de l'utilisateur connecté (rôle {@code user}).
@@ -27,6 +30,8 @@ import java.util.UUID;
 @Path("/api/v1/kyc")
 @RolesAllowed("user")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "kyc")
+@SecurityRequirement(name = "bearerAuth")
 public class KycResource {
 
     @Inject
@@ -38,12 +43,14 @@ public class KycResource {
     @Inject
     JsonWebToken jwt;
 
+    @Operation(summary = "Initialisation du parcours KYC (jeton SDK Sumsub)")
     @POST
     @Path("/init")
     public KycInitDto init() {
         return kycService.initKyc(currentUserId());
     }
 
+    @Operation(summary = "Statut et niveau KYC courants")
     @GET
     @Path("/status")
     public KycStatusDto status() {

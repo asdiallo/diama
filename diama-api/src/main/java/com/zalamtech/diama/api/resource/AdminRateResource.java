@@ -24,6 +24,9 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Administration des taux de change (rôle {@code admin}).
@@ -39,6 +42,8 @@ import java.util.UUID;
 @RolesAllowed("admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminRateResource {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -49,23 +54,27 @@ public class AdminRateResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Taux de change actifs")
     @GET
     public List<AdminRateDto> list() {
         return adminRates.listActive();
     }
 
+    @Operation(summary = "Modification de la marge d'un taux")
     @PUT
     @Path("/{id}/spread")
     public AdminRateDto updateSpread(@PathParam("id") UUID id, @Valid UpdateSpreadRequest request) {
         return adminRates.updateSpread(id, request.spreadPct(), security.getCurrentAdminId());
     }
 
+    @Operation(summary = "Refresh manuel des taux depuis Thunes")
     @POST
     @Path("/refresh")
     public Map<String, Integer> refresh() {
         return Map.of("corridorsUpdated", adminRates.refresh(security.getCurrentAdminId()));
     }
 
+    @Operation(summary = "Historique des taux d'un corridor")
     @GET
     @Path("/history")
     public Page<AdminRateDto> history(@QueryParam("corridor") String corridor,

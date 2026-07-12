@@ -16,6 +16,9 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Émission de devis de transfert pour l'utilisateur connecté (rôle {@code user}).
@@ -25,6 +28,8 @@ import java.util.UUID;
 @RolesAllowed("user")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "transfers")
+@SecurityRequirement(name = "bearerAuth")
 public class QuotationResource {
 
     @Inject
@@ -37,6 +42,7 @@ public class QuotationResource {
     JsonWebToken jwt;
 
     /** POST / — construit un devis (taux verrouillé 15 min). */
+    @Operation(summary = "Devis de transfert (taux verrouillé 15 min)")
     @POST
     public QuotationDto quote(@Valid QuotationRequest request) {
         return quotations.buildQuotation(

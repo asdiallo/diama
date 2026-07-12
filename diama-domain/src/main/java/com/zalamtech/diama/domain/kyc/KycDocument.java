@@ -3,16 +3,15 @@ package com.zalamtech.diama.domain.kyc;
 import com.zalamtech.diama.domain.support.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -30,8 +29,7 @@ public class KycDocument extends BaseEntity {
     @Column(name = "kyc_profile_id", nullable = false)
     private UUID kycProfileId;
 
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::doc_type")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "doc_type", nullable = false, columnDefinition = "doc_type")
     private DocType docType;
 
@@ -39,8 +37,7 @@ public class KycDocument extends BaseEntity {
     private String sumsubDocId;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::doc_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "doc_status")
     private DocStatus status = DocStatus.PENDING;
 

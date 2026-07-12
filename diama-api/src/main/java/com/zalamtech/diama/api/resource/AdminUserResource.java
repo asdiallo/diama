@@ -29,6 +29,9 @@ import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Administration des comptes utilisateurs (rôles {@code kyc-agent}, {@code ops-agent}, {@code admin}).
@@ -46,6 +49,8 @@ import java.util.UUID;
 @RolesAllowed({"kyc-agent", "ops-agent", "admin"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminUserResource {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -56,6 +61,7 @@ public class AdminUserResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Recherche paginée des utilisateurs")
     @GET
     public Page<AdminUserListItemDto> list(@QueryParam("status") String status,
                                            @QueryParam("q") String q,
@@ -72,12 +78,14 @@ public class AdminUserResource {
         return Page.of(content, clampedPage, clampedSize, total);
     }
 
+    @Operation(summary = "Dossier complet d'un utilisateur")
     @GET
     @Path("/{id}")
     public AdminUserDetailDto get(@PathParam("id") UUID id) {
         return adminUsers.getDetail(id);
     }
 
+    @Operation(summary = "Changement de statut (ACTIVE/SUSPENDED/CLOSED)")
     @PUT
     @Path("/{id}/status")
     public Response updateStatus(@PathParam("id") UUID id, @Valid UpdateUserStatusRequest request) {
@@ -85,6 +93,7 @@ public class AdminUserResource {
         return Response.noContent().build();
     }
 
+    @Operation(summary = "Historique des transactions d'un utilisateur")
     @GET
     @Path("/{id}/transactions")
     public Page<AdminTransactionDto> transactions(@PathParam("id") UUID id,
@@ -97,12 +106,14 @@ public class AdminUserResource {
         return Page.of(content, clampedPage, clampedSize, total);
     }
 
+    @Operation(summary = "Sessions Keycloak actives d'un utilisateur")
     @GET
     @Path("/{id}/sessions")
     public List<SessionDto> sessions(@PathParam("id") UUID id) {
         return adminUsers.listSessions(id).stream().map(AdminUserResource::toSessionDto).toList();
     }
 
+    @Operation(summary = "Révocation d'une session")
     @POST
     @Path("/{id}/sessions/{sessionId}/revoke")
     public Response revokeSession(@PathParam("id") UUID id, @PathParam("sessionId") String sessionId) {

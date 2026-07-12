@@ -21,6 +21,9 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * Revue KYC backoffice (rôle {@code kyc-agent}).
@@ -36,6 +39,8 @@ import java.util.UUID;
 @RolesAllowed("kyc-agent")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminKycResource {
 
     @Inject
@@ -47,18 +52,21 @@ public class AdminKycResource {
     @Inject
     SecurityContext security;
 
+    @Operation(summary = "Dossiers KYC en attente de revue")
     @GET
     @Path("/pending")
     public List<AdminKycReviewDto> pending() {
         return kycService.getPendingReview();
     }
 
+    @Operation(summary = "Dossier KYC complet d'un utilisateur")
     @GET
     @Path("/{userId}")
     public AdminKycReviewDto get(@PathParam("userId") UUID userId) {
         return kycService.getFullDossier(userId);
     }
 
+    @Operation(summary = "Validation manuelle d'un dossier")
     @POST
     @Path("/{userId}/approve")
     public Response approve(@PathParam("userId") UUID userId) {
@@ -66,6 +74,7 @@ public class AdminKycResource {
         return Response.noContent().build();
     }
 
+    @Operation(summary = "Rejet manuel avec motif")
     @POST
     @Path("/{userId}/reject")
     public Response reject(@PathParam("userId") UUID userId, @Valid RejectRequest request) {

@@ -3,15 +3,12 @@ package com.zalamtech.diama.domain.user;
 import com.zalamtech.diama.domain.support.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -66,8 +63,7 @@ public class User extends BaseEntity {
     private String preferredCurrency = "EUR";
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::user_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status", nullable = false, columnDefinition = "user_status")
     private UserStatus status = UserStatus.PENDING_VERIFICATION;
 

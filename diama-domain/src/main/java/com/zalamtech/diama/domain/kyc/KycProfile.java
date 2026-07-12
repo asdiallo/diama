@@ -3,16 +3,15 @@ package com.zalamtech.diama.domain.kyc;
 import com.zalamtech.diama.domain.support.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -42,8 +41,7 @@ public class KycProfile extends BaseEntity {
     private String sumsubApplicantId;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @ColumnTransformer(write = "?::kyc_verification_status")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "verification_status", nullable = false, columnDefinition = "kyc_verification_status")
     private KycVerificationStatus verificationStatus = KycVerificationStatus.NOT_STARTED;
 

@@ -86,7 +86,7 @@ quarkus:
       credentials:
         secret: ${SWAN_CLIENT_SECRET}
       grant:
-        type: client_credentials
+        type: client   # client_credentials (valeur d'enum Quarkus : 'client')
 
   # --- Cache / sessions Redis (mot de passe requis) --------
   redis:
@@ -116,10 +116,16 @@ quarkus:
           policy: permit
 
   # --- OpenAPI / Swagger -----------------------------------
+  # Swagger UI : servi uniquement en dev/test (pas d'always-include
+  # hors profil %dev → exclu des builds de prod).
   smallrye-openapi:
     info-title: Diama API
     info-version: 1.0.0
     info-description: Plateforme de transfert d'argent Europe ↔ Afrique de l'Ouest
+    security-scheme: jwt
+    security-scheme-name: bearerAuth
+    jwt-bearer-format: JWT
+    jwt-security-scheme-value: bearer
 
   # --- Observabilité ---------------------------------------
   micrometer:
@@ -157,42 +163,42 @@ quarkus:
 mp:
   messaging:
     outgoing:
-      transfer-events:
+      transfer-events-out:
         connector: smallrye-kafka
         topic: transfer-events
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      kyc-events:
+      kyc-events-out:
         connector: smallrye-kafka
         topic: kyc-events
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      notifications:
+      notifications-out:
         connector: smallrye-kafka
         topic: notifications
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      thunes-callbacks:
+      thunes-callbacks-out:
         connector: smallrye-kafka
         topic: thunes-callbacks
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      audit-events:
+      audit-events-out:
         connector: smallrye-kafka
         topic: audit-events
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      rate-updated:
+      rate-updated-out:
         connector: smallrye-kafka
         topic: rate-updated
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      sumsub-webhooks:
+      sumsub-webhooks-out:
         connector: smallrye-kafka
         topic: sumsub-webhooks
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
-      swan-webhooks:
+      swan-webhooks-out:
         connector: smallrye-kafka
         topic: swan-webhooks
         value:

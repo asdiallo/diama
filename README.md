@@ -1,84 +1,72 @@
-# diama
+# Diama
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Plateforme de transfert d'argent **Europe ↔ Afrique de l'Ouest**.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+Backend Java 21 / Quarkus 3.x (natif GraalVM) — PostgreSQL 16, Redis, Kafka
+(pattern outbox), Keycloak 24 (OIDC, realm `transfer-app`), Thunes v2 (payout),
+Swan.io (collecte EUR, IBAN dédiés), Sumsub (KYC).
 
-## Running the application in dev mode
+## Prérequis
 
-You can run your application in dev mode that enables live coding using:
+- **Java 21** (toolchain Gradle — installée automatiquement si absente)
+- **Docker** (stack locale + Testcontainers pour les tests)
 
-```shell script
+## Démarrage rapide
+
+```bash
+# 1. Variables d'environnement
+cp .env.example .env            # puis renseigner les secrets partenaires
+
+# 2. Stack locale (Postgres 5433, Redis, Kafka, Keycloak 9080, Elasticsearch)
+docker compose up -d
+
+# 3. API en mode dev (hot reload)
 ./gradlew quarkusDev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Le schéma PostgreSQL est appliqué par **Flyway** au démarrage
+(`diama-api/src/main/resources/db/migration`). Le realm Keycloak
+`transfer-app` est importé depuis `config/keycloak/realm-transfer-app.json`
+(3 clients : `mobile-app` public+PKCE, `backoffice-app` confidentiel,
+`quarkus-api` service account — penser à régénérer les secrets et à accorder
+`manage-users` au service account pour la synchro `kyc_level`).
 
-## Packaging and running the application
+## Commandes
 
-The application can be packaged using:
+| Commande | Effet |
+|---|---|
+| `./gradlew quarkusDev` | Mode dev, hot reload, Dev UI sur `/q/dev/` |
+| `./gradlew test` | Tests (Testcontainers : Docker requis) |
+| `./gradlew build` | Build JVM (`build/quarkus-app/`) |
+| `./gradlew build -Dquarkus.native.enabled=true` | Build **natif** GraalVM |
+| `docker build -t zalamtech/diama-api:native .` | Image native multi-stage |
 
-```shell script
-./gradlew build
-```
+## URLs locales
 
-It produces the `quarkus-run.jar` file in the `build/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `build/quarkus-app/lib/` directory.
+| Service | URL |
+|---|---|
+| API | <http://localhost:8080> |
+| Swagger UI (dev) | <http://localhost:8080/q/swagger-ui> |
+| Health (readiness / wellness) | <http://localhost:8080/q/health> · `/q/health/well` |
+| Métriques Prometheus | <http://localhost:8080/q/metrics> |
+| Keycloak (admin/admin) | <http://localhost:9080> |
+| Kafka UI | <http://localhost:8090> |
 
-The application is now runnable using `java -jar build/quarkus-app/quarkus-run.jar`.
+## Structure (Gradle multi-modules, Kotlin DSL)
 
-If you want to build an _über-jar_, execute the following command:
+| Module | Contenu |
+|---|---|
+| `diama-api` | Resources JAX-RS, schedulers (outbox, réconciliation), sécurité |
+| `diama-domain` | Entités Panache, services métier, FSM, ports (hexagonal) |
+| `diama-infra` | Adaptateurs REST partenaires, consumers Kafka, health checks |
+| `diama-common` | DTOs, exceptions, utilitaires |
 
-```shell script
-./gradlew build -Dquarkus.package.jar.type=uber-jar
-```
+## Tests
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar build/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./gradlew build -Dquarkus.native.enabled=true
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./build/diama-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/gradle-tooling>.
-
-## Related Guides
-
-- Hibernate ORM ([guide](https://quarkus.io/guides/hibernate-orm)): Object-relational mapping with JPA/Hibernate for relational database access
-- Keycloak Authorization ([guide](https://quarkus.io/guides/security-keycloak-authorization)): Policy enforcer using Keycloak-managed permissions to control access to protected resources
-- OpenID Connect ([guide](https://quarkus.io/guides/security-openid-connect)): Secure applications with OpenID Connect and OAuth 2.0 using bearer tokens and authorization code flow
-- YAML Configuration ([guide](https://quarkus.io/guides/config-yaml)): Use YAML to configure your Quarkus application
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplified JPA/Hibernate data access layer with active record and repository patterns
-- Hibernate Search ORM + Elasticsearch ([guide](https://quarkus.io/guides/hibernate-search-orm-elasticsearch)): Automatically index your Hibernate entities in Elasticsearch
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-
-## Provided Code
-
-### YAML Config
-
-Configure your application with YAML
-
-[Related guide section...](https://quarkus.io/guides/config-reference#configuration-examples)
-
-The Quarkus application configuration is located in `src/main/resources/application.yml`.
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
+- **Unitaires / intégration** (`@QuarkusTest` + DevServices Postgres/Redis) :
+  FSM, frais, taux (cache Redis), devis (TTL 15 min), sécurité par rôle.
+- **Flux de bout en bout** (`*FlowIT`) : transfert complet (inscription →
+  devis → collecte Swan → payout Thunes → DELIVERED), montée KYC (Sumsub →
+  Keycloak + provisionnement Swan), cycle RFI. Les webhooks sont signés HMAC
+  et les sauts Kafka rejoués via l'outbox (broker non requis).
+- **WireMock** : adaptateurs REST Thunes/Sumsub exercés contre stubs HTTP.

@@ -92,15 +92,15 @@ class SecurityLayerTest {
     @Test
     @TestSecurity(user = "kyc-1", roles = "kyc-agent")
     void kyc_agent_can_access_kyc_but_not_transactions() {
-        given().when().get("/api/backoffice/kyc/pending").then().statusCode(200);
-        given().when().get("/api/backoffice/transactions").then().statusCode(403);
+        given().when().get("/api/v1/admin/kyc/pending").then().statusCode(200);
+        given().when().get("/api/v1/admin/transactions").then().statusCode(403);
     }
 
     @Test
     @TestSecurity(user = "ops-1", roles = "ops-agent")
     void ops_agent_can_access_transactions_but_not_kyc() {
-        given().when().get("/api/backoffice/transactions").then().statusCode(200);
-        given().when().get("/api/backoffice/kyc/pending").then().statusCode(403);
+        given().when().get("/api/v1/admin/transactions").then().statusCode(200);
+        given().when().get("/api/v1/admin/kyc/pending").then().statusCode(403);
     }
 
     // --- Mapping de persistance runtime (Hibernate ↔ PostgreSQL) --------

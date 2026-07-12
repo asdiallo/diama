@@ -29,6 +29,8 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Réception des webhooks Sumsub (verdicts de revue KYC, documents, …).
@@ -44,6 +46,7 @@ import java.util.UUID;
 @Path("/webhooks/sumsub")
 @PermitAll
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "webhooks")
 public class SumsubWebhookResource {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
@@ -62,6 +65,7 @@ public class SumsubWebhookResource {
     @ConfigProperty(name = "diama.sumsub.webhook-secret")
     String webhookSecret;
 
+    @Operation(summary = "Webhook Sumsub (signature HMAC, traitement asynchrone)")
     @POST
     @Transactional
     public Response receive(String rawBody, @HeaderParam("X-App-Access-Sig") String signature) {
