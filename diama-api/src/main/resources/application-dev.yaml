@@ -1,6 +1,7 @@
 # ============================================================
 #  Profil DEV — connexion à la stack Docker locale
-#  (Postgres 5433, Keycloak 9080, Redis 6379, Elastic 9200).
+#  (Postgres 5433, Redis 6379, Elastic 9200) et au Keycloak
+#  mutualisé https://auth.zalamtech.fr (realm diama-transfer-app).
 #  Les DevServices sont DÉSACTIVÉS : on utilise les conteneurs
 #  déjà démarrés, pas des conteneurs éphémères.
 # ============================================================
@@ -25,10 +26,10 @@
       devservices:
         enabled: true
 
-    # OIDC → Keycloak local realm transfer-app (héritent des défauts
-    # de application.yaml, rappelés ici pour lisibilité).
+    # OIDC → Keycloak mutualisé, realm diama-transfer-app (défauts de
+    # application.yaml, rappelés ici pour lisibilité).
     oidc:
-      auth-server-url: http://localhost:9080/realms/transfer-app
+      auth-server-url: ${KEYCLOAK_URL:https://auth.zalamtech.fr}/realms/${KEYCLOAK_REALM:diama-transfer-app}
 
     # --- Logs DEBUG ---------------------------------------
     log:
@@ -37,10 +38,10 @@
         "com.zalamtech.diama":
           level: DEBUG
         "org.hibernate.SQL":
-          level: DEBUG
+          level: INFO
     hibernate-orm:
       log:
-        sql: true
+        sql: false
         format-sql: true
 
     # --- Swagger UI toujours exposé -----------------------

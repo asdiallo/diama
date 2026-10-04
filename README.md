@@ -3,7 +3,7 @@
 Plateforme de transfert d'argent **Europe ↔ Afrique de l'Ouest**.
 
 Backend Java 21 / Quarkus 3.x (natif GraalVM) — PostgreSQL 16, Redis, Kafka
-(pattern outbox), Keycloak 24 (OIDC, realm `transfer-app`), Thunes v2 (payout),
+(pattern outbox), Keycloak 24 (OIDC, realm `diama-transfer-app`), Thunes v2 (payout),
 Swan.io (collecte EUR, IBAN dédiés), Sumsub (KYC).
 
 ## Prérequis
@@ -17,7 +17,7 @@ Swan.io (collecte EUR, IBAN dédiés), Sumsub (KYC).
 # 1. Variables d'environnement
 cp .env.example .env            # puis renseigner les secrets partenaires
 
-# 2. Stack locale (Postgres 5433, Redis, Kafka, Keycloak 9080, Elasticsearch)
+# 2. Stack locale (Postgres 5433, Redis, Kafka, Elasticsearch)
 docker compose up -d
 
 # 3. API en mode dev (hot reload)
@@ -25,11 +25,12 @@ docker compose up -d
 ```
 
 Le schéma PostgreSQL est appliqué par **Flyway** au démarrage
-(`diama-api/src/main/resources/db/migration`). Le realm Keycloak
-`transfer-app` est importé depuis `config/keycloak/realm-transfer-app.json`
-(3 clients : `mobile-app` public+PKCE, `backoffice-app` confidentiel,
-`quarkus-api` service account — penser à régénérer les secrets et à accorder
-`manage-users` au service account pour la synchro `kyc_level`).
+(`diama-api/src/main/resources/db/migration`).
+
+L'authentification (dev et phase pilote prod) passe par le Keycloak mutualisé
+<https://auth.zalamtech.fr>, realm `diama-transfer-app` ; renseigner
+`KEYCLOAK_API_SECRET` (client `quarkus-api`) dans `.env`. Le service account
+`quarkus-api` doit disposer de `manage-users` pour la synchro `kyc_level`.
 
 ## Commandes
 
@@ -49,7 +50,7 @@ Le schéma PostgreSQL est appliqué par **Flyway** au démarrage
 | Swagger UI (dev) | <http://localhost:8080/q/swagger-ui> |
 | Health (readiness / wellness) | <http://localhost:8080/q/health> · `/q/health/well` |
 | Métriques Prometheus | <http://localhost:8080/q/metrics> |
-| Keycloak (admin/admin) | <http://localhost:9080> |
+| Keycloak | <https://auth.zalamtech.fr/realms/diama-transfer-app> |
 | Kafka UI | <http://localhost:8090> |
 
 ## Structure (Gradle multi-modules, Kotlin DSL)

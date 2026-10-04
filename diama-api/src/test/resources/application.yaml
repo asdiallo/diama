@@ -58,3 +58,9 @@
       app-token: test-sumsub-token
       app-secret: test-sumsub-secret
       webhook-secret: test-sumsub-webhook-secret
+    # Tous les tests partent de 127.0.0.1 : plafonds par IP relevés pour ne pas
+    # dépendre de l'ordre d'exécution ni d'un conteneur Redis réutilisé.
+    registration:
+      rate-limit:
+        register-per-hour: 100000
+        resend-per-hour: 100000

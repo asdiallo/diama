@@ -20,9 +20,10 @@ import java.util.UUID;
 @ApplicationScoped
 public class ActiveSessionRepository {
 
+    // host() : la colonne inet arrive sinon en java.net.InetAddress, incastable en String.
     private static final String QUERY = """
-            select id, keycloak_session_id, client, ip_address, started_at, last_seen_at,
-                   email, keycloak_id, kyc_level
+            select id, keycloak_session_id, client, host(ip_address) as ip_address,
+                   started_at, last_seen_at, email, keycloak_id, kyc_level
             from v_active_sessions
             order by last_seen_at desc
             """;
@@ -42,10 +43,21 @@ public class ActiveSessionRepository {
                 row.get("keycloak_session_id", String.class),
                 row.get("client", String.class),
                 row.get("ip_address", String.class),
-                row.get("started_at", OffsetDateTime.class),
-                row.get("last_seen_at", OffsetDateTime.class),
+                toOffset(row.get("started_at")),
+                toOffset(row.get("last_seen_at")),
                 row.get("email", String.class),
                 row.get("keycloak_id", String.class),
                 row.get("kyc_level", Short.class));
+    }
+
+    /** timestamptz d'une requête native : Instant ou OffsetDateTime selon le mapping Hibernate. */
+    private static OffsetDateTime toOffset(Object value) {
+        return switch (value) {
+            case null -> null;
+            case OffsetDateTime odt -> odt;
+            case java.time.Instant instant -> instant.atOffset(java.time.ZoneOffset.UTC);
+            default -> throw new IllegalStateException(
+                    "Type timestamp inattendu : " + value.getClass().getName());
+        };
     }
 }

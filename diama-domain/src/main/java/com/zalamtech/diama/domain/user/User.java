@@ -67,6 +67,14 @@ public class User extends BaseEntity {
     @Column(name = "status", nullable = false, columnDefinition = "user_status")
     private UserStatus status = UserStatus.PENDING_VERIFICATION;
 
+    /**
+     * {@code true} tant qu'un compte créé par l'inscription mobile n'a pas confirmé
+     * son email. Liste de travail de la purge des inscriptions abandonnées.
+     */
+    @Builder.Default
+    @Column(name = "email_verification_pending", nullable = false)
+    private Boolean emailVerificationPending = Boolean.FALSE;
+
     @Column(name = "swan_account_id", length = 100)
     private String swanAccountId;
 

@@ -34,13 +34,16 @@
     native:
       additional-build-args: >-
         -H:+UnlockExperimentalVMOptions,
-        --initialize-at-run-time=org.postgresql.sasl.ScramAuthenticator
+        --initialize-at-run-time=org.postgresql.sasl.ScramAuthenticator,
+        --initialize-at-run-time=com.zalamtech.diama.domain.support.UuidV7,
+        --initialize-at-run-time=sun.security.pkcs11.P11Util
       enable-http-url-handler: true
 
     # --- HTTP derrière l'ingress K8s -----------------------
     http:
       cors:
         origins: ${CORS_ORIGINS}
-    # Le realm Keycloak est fourni par l'infra (pas de DevServices)
+    # Phase pilote : Keycloak mutualisé auth.zalamtech.fr, realm
+    # diama-transfer-app (surchargable via KEYCLOAK_URL / KEYCLOAK_REALM).
     oidc:
-      auth-server-url: ${KEYCLOAK_URL}/realms/transfer-app
+      auth-server-url: ${KEYCLOAK_URL:https://auth.zalamtech.fr}/realms/${KEYCLOAK_REALM:diama-transfer-app}

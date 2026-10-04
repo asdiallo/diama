@@ -24,7 +24,8 @@ COPY --chown=quarkus:quarkus diama-api    ./diama-api
 USER quarkus
 # Compilation native du module applicatif uniquement.
 # (équivalent hérité : -Pquarkus.package.type=native)
-RUN ./gradlew :diama-api:build \
+# Tests exclus : ils exigent Docker (Testcontainers), indisponible ici.
+RUN ./gradlew :diama-api:build -x test \
       -Dquarkus.native.enabled=true \
       -Dquarkus.package.jar.enabled=false \
       --no-daemon --stacktrace

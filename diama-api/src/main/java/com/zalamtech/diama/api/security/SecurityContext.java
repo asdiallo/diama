@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * Accès centralisé au contexte de sécurité de la requête courante,
- * dérivé du JWT Keycloak (realm transfer-app).
+ * dérivé du JWT Keycloak (realm diama-transfer-app).
  *
  * <p>Note : {@link #getCurrentUserId()} renvoie le {@code sub} du JWT
  * (= {@code keycloak_id}), <b>pas</b> la PK interne {@code users.id}.</p>

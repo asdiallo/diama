@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,13 @@ public class UserRepository implements PanacheRepositoryBase<User, UUID> {
 
     public Optional<User> findByPhone(String phone) {
         return find("phone", phone).firstResultOptional();
+    }
+
+    /** Inscriptions non confirmées antérieures à {@code cutoff}, les plus anciennes d'abord. */
+    public List<User> findUnverifiedCreatedBefore(OffsetDateTime cutoff, int limit) {
+        return find("emailVerificationPending = true and createdAt < ?1", Sort.by("createdAt"), cutoff)
+                .page(Page.of(0, limit))
+                .list();
     }
 
     public Optional<User> findBySwanIban(String swanIban) {

@@ -56,22 +56,24 @@ quarkus:
       group-id: com.zalamtech
       artifact-id: diama-infra
 
-  # --- Authentification OIDC (Keycloak realm transfer-app) --------
+  # --- Authentification OIDC (Keycloak mutualisé auth.zalamtech.fr, realm
+  #     diama-transfer-app : dev + phase pilote prod) --------
   oidc:
-    auth-server-url: ${KEYCLOAK_URL:http://localhost:9080}/realms/${KEYCLOAK_REALM:transfer-app}
+    auth-server-url: ${KEYCLOAK_URL:https://auth.zalamtech.fr}/realms/${KEYCLOAK_REALM:diama-transfer-app}
     client-id: quarkus-api
     credentials:
       secret: ${KEYCLOAK_API_SECRET}
     application-type: service
-    # Rôles Keycloak portés par le claim imbriqué realm_access/roles.
+    # Rôles Keycloak : claim standard realm_access/roles, ou claim plat `roles`
+    # (mapper du scope diama-profile, tokens du client backoffice-app).
     roles:
-      role-claim-path: realm_access/roles
+      role-claim-path: realm_access/roles,roles
 
   # Admin client Keycloak (sync kyc_level → attribut utilisateur)
   keycloak:
     admin-client:
-      server-url: ${KEYCLOAK_URL:http://localhost:9080}
-      realm: ${KEYCLOAK_REALM:transfer-app}
+      server-url: ${KEYCLOAK_URL:https://auth.zalamtech.fr}
+      realm: ${KEYCLOAK_REALM:diama-transfer-app}
       client-id: quarkus-api
       client-secret: ${KEYCLOAK_API_SECRET}
       grant-type: CLIENT_CREDENTIALS

@@ -5,8 +5,11 @@
 #  Puis :        ./gradlew quarkusDev   (API sur l'hôte, hot reload)
 #
 #  Les ports publiés reflètent application-dev.yaml :
-#  Postgres 5433, Keycloak 9080, Redis 6379, Elasticsearch 9200,
-#  Kafka 9092, Kafka UI 8090.
+#  Postgres 5433, Redis 6379, Elasticsearch 9200, Kafka 9092,
+#  Kafka UI 8090.
+#
+#  Keycloak : instance mutualisée https://auth.zalamtech.fr (realm
+#  diama-transfer-app) — pas de Keycloak local.
 #
 #  Variante tout-conteneur : docker compose --profile app up -d
 #  (construit l'image native via le Dockerfile — long, sans hot reload).
@@ -74,18 +77,6 @@ services:
     depends_on:
       - kafka
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: diama-keycloak
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-    ports:
-      - "9080:8080"
-    volumes:
-      - ./config/keycloak:/opt/keycloak/data/import:ro
-
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: diama-elasticsearch
@@ -107,7 +98,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-diama}
       REDIS_URL: redis://:${REDIS_PASSWORD:-eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81}@redis:6379
       KAFKA_BROKERS: kafka:29092
-      KEYCLOAK_URL: http://keycloak:8080
+      # Keycloak mutualisé (dev + pilote prod) ; surchargable via .env.
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-https://auth.zalamtech.fr}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-diama-transfer-app}
       ELASTIC_HOSTS: elasticsearch:9200
     env_file:
       - .env
@@ -119,8 +112,6 @@ services:
       redis:
         condition: service_healthy
       kafka:
-        condition: service_started
-      keycloak:
         condition: service_started
 
 volumes:
