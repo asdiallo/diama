@@ -12,7 +12,8 @@
 #  diama-transfer-app) — pas de Keycloak local.
 #
 #  Variante tout-conteneur : docker compose --profile app up -d
-#  (construit l'image native via le Dockerfile — long, sans hot reload).
+#  (image native zalamtech/diama-transfer-api tirée du registre).
+#  Inclut le backoffice diama-admin (port 3100).
 # ============================================================
 
 services:
@@ -72,10 +73,28 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: diama-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      # Login intégré (formulaire) : l'UI est exposée publiquement via Traefik.
+      AUTH_TYPE: LOGIN_FORM
+      SPRING_SECURITY_USER_NAME: ${KAFKA_UI_USER:-admin}
+      SPRING_SECURITY_USER_PASSWORD: ${KAFKA_UI_PASSWORD:?KAFKA_UI_PASSWORD requis (voir .env.example)}
     ports:
       - "8090:8080"
     depends_on:
       - kafka
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+
+      - "traefik.http.routers.diama-kafka.rule=Host(`diama-kafka.zalamtech.fr`)"
+      - "traefik.http.routers.diama-kafka.entrypoints=websecure"
+      - "traefik.http.routers.diama-kafka.tls=true"
+      - "traefik.http.routers.diama-kafka.tls.certresolver=ovhZalamtechFrResolver"
+      - "traefik.http.routers.diama-kafka.tls.domains[0].main=diama-kafka.zalamtech.fr"
+
+      - "traefik.http.services.diama-kafka.loadbalancer.server.port=8080"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
@@ -90,7 +109,7 @@ services:
   # --- API en conteneur (optionnel : docker compose --profile app up) ----
   diama-api:
     profiles: ["app"]
-    build: .
+    image: zalamtech/diama-transfer-api:1.0.0-SNAPSHOT
     container_name: diama-api
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/diama
@@ -113,6 +132,57 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+
+      - "traefik.http.routers.diama-api.rule=Host(`diama-api.zalamtech.fr`)"
+      - "traefik.http.routers.diama-api.entrypoints=websecure"
+      - "traefik.http.routers.diama-api.tls=true"
+      - "traefik.http.routers.diama-api.tls.certresolver=ovhZalamtechFrResolver"
+      - "traefik.http.routers.diama-api.tls.domains[0].main=diama-api.zalamtech.fr"
+
+      - "traefik.http.services.diama-api.loadbalancer.server.port=8080"
+
+  # --- Backoffice Next.js (optionnel : docker compose --profile app up) ----
+  diama-admin:
+    profiles: ["app"]
+    image: zalamtech/diama-transfer-admin:0.1.0
+    container_name: diama-admin
+    environment:
+      KEYCLOAK_ISSUER: ${KEYCLOAK_URL:-https://auth.zalamtech.fr}/realms/${KEYCLOAK_REALM:-diama-transfer-app}
+      KEYCLOAK_CLIENT_ID: backoffice-app
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://diama-admin.zalamtech.fr}
+      # API vue depuis le conteneur (réseau compose).
+      API_BASE_URL: http://diama-api:8080
+    ports:
+      - "3100:3100"
+    depends_on:
+      - diama-api
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+
+      - "traefik.http.routers.diama-admin.rule=Host(`diama-admin.zalamtech.fr`)"
+      - "traefik.http.routers.diama-admin.entrypoints=websecure"
+      - "traefik.http.routers.diama-admin.tls=true"
+      - "traefik.http.routers.diama-admin.tls.certresolver=ovhZalamtechFrResolver"
+      - "traefik.http.routers.diama-admin.tls.domains[0].main=diama-admin.zalamtech.fr"
+
+      - "traefik.http.services.diama-admin.loadbalancer.server.port=3100"
 
 volumes:
   postgres-data:
+
+networks:
+  # Réseau du reverse proxy Traefik (créé hors de ce compose).
+  web:
+    external: true
