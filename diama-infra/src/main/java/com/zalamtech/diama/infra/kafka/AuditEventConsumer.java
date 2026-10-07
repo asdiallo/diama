@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zalamtech.diama.domain.audit.AuditEvent;
 import com.zalamtech.diama.domain.audit.AuditEventRepository;
+import com.zalamtech.diama.domain.user.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import java.util.UUID;
 
 /**
  * Consomme le topic {@code audit-events} (enfilé par {@code AuditService}) et
@@ -24,6 +27,9 @@ public class AuditEventConsumer {
     AuditEventRepository auditEvents;
 
     @Inject
+    UserRepository users;
+
+    @Inject
     ObjectMapper objectMapper;
 
     @Incoming("audit-events")
@@ -36,7 +42,7 @@ public class AuditEventConsumer {
         }
 
         auditEvents.persist(AuditEvent.builder()
-                .userId(msg.userId())
+                .userId(existingUserOrNull(msg))
                 .adminId(msg.adminId())
                 .keycloakUserId(msg.keycloakUserId())
                 .keycloakSessionId(msg.keycloakSessionId())
@@ -48,6 +54,20 @@ public class AuditEventConsumer {
                 .afterState(writeOrNull(msg.after()))
                 .ipAddress(msg.ip())
                 .build());
+    }
+
+    /**
+     * L'utilisateur peut avoir été supprimé entre l'émission et la consommation
+     * (purge des inscriptions non confirmées) : on conserve la trace sans la
+     * FK plutôt que de bloquer le canal sur une violation de contrainte.
+     */
+    private UUID existingUserOrNull(AuditEventMessage msg) {
+        final UUID userId = msg.userId();
+        if (userId == null || users.findByIdOptional(userId).isPresent()) {
+            return userId;
+        }
+        log.warn("Audit {} : utilisateur {} introuvable, user_id laissé à null", msg.eventType(), userId);
+        return null;
     }
 
     private String writeOrNull(JsonNode node) {

@@ -96,11 +96,6 @@ quarkus:
     max-pool-size: 16
     max-pool-waiting: -1
 
-  # --- Kafka (messaging, outbox) ---------------------------
-  kafka:
-    bootstrap:
-      servers: ${KAFKA_BROKERS:localhost:9092}
-
   # --- HTTP + CORS -----------------------------------------
   http:
     port: 8080
@@ -154,6 +149,14 @@ quarkus:
       url: ${SWAN_URL:https://api.swan.io}
     sumsub-api:
       url: ${SUMSUB_URL:https://api.sumsub.com}
+
+# ============================================================
+#  Kafka (messaging, outbox) — clé racine `kafka.*`, lue par le connecteur
+#  smallrye-kafka et KafkaHealthCheck (`quarkus.kafka.*` n'est PAS reconnu).
+# ============================================================
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BROKERS:localhost:9092}
 
 # ============================================================
 #  MicroProfile Reactive Messaging — canaux Kafka

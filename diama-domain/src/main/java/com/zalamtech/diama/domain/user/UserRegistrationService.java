@@ -240,7 +240,9 @@ public class UserRegistrationService {
     void deleteInTx(PendingAccount account, boolean existsInIdentityProvider) {
         users.deleteById(account.id());
         users.flush();
-        audit.log(null, account.id(), null, "USER_PURGED_UNVERIFIED", "USER", account.id(), null, null);
+        // user_id à null : la ligne users n'existe plus (FK audit_events) et
+        // l'acteur est le système ; entity_id garde l'identifiant purgé.
+        audit.log(null, null, null, "USER_PURGED_UNVERIFIED", "USER", account.id(), null, null);
         if (existsInIdentityProvider) {
             identity.deleteUser(account.keycloakId());
         }
