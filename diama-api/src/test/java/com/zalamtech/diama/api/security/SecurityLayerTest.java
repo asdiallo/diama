@@ -1,10 +1,15 @@
 package com.zalamtech.diama.api.security;
 
+import com.zalamtech.diama.domain.user.AdminRole;
+import com.zalamtech.diama.domain.user.AdminUser;
+import com.zalamtech.diama.domain.user.AdminUserRepository;
 import com.zalamtech.diama.domain.user.SessionClient;
 import com.zalamtech.diama.domain.user.User;
 import com.zalamtech.diama.domain.user.UserRepository;
 import com.zalamtech.diama.domain.user.UserSession;
 import com.zalamtech.diama.domain.user.UserSessionRepository;
+import com.zalamtech.diama.domain.user.UserStatus;
+import io.restassured.http.ContentType;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -43,6 +48,9 @@ class SecurityLayerTest {
 
     @Inject
     UserSessionRepository sessions;
+
+    @Inject
+    AdminUserRepository adminUsers;
 
     // --- Authentification requise ---------------------------------------
 
@@ -181,5 +189,43 @@ class SecurityLayerTest {
         assertNull(reloaded.getIpAddress(), "la première insertion fait foi");
         assertTrue(reloaded.getIsActive());
         assertEquals(7, reloaded.getId().version(), "DEFAULT uuid_generate_v7() côté base");
+    }
+
+    // --- Agent backoffice provisionné depuis le JWT ---------------------
+
+    private static final String ADMIN_SUB = "22222222-2222-2222-2222-222222222222";
+
+    @Test
+    @TestSecurity(user = ADMIN_SUB, roles = "admin")
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = ADMIN_SUB),
+            @Claim(key = "email", value = "agent-admin@example.com"),
+            @Claim(key = "name", value = "Fatoumata Sow")
+    })
+    void admin_without_admin_users_row_is_provisioned_on_first_action() {
+        final String uniq = UUID.randomUUID().toString().substring(0, 8);
+        final UUID userId = QuarkusTransaction.requiringNew().call(() -> {
+            User u = User.builder()
+                    .keycloakId("kc-status-" + uniq)
+                    .email("status-" + uniq + "@example.com")
+                    .phone("+3362" + Long.toString(System.nanoTime() % 100000000L))
+                    .firstName("Ousmane")
+                    .lastName("Camara")
+                    .countryOfResidence("FR")
+                    .build();
+            users.persist(u);
+            return u.getId();
+        });
+
+        given().contentType(ContentType.JSON).body("{\"status\":\"ACTIVE\"}")
+                .when().put("/api/v1/admin/users/" + userId + "/status")
+                .then().statusCode(204);
+
+        final AdminUser agent = QuarkusTransaction.requiringNew()
+                .call(() -> adminUsers.findByKeycloakId(ADMIN_SUB).orElseThrow());
+        assertEquals(AdminRole.ADMIN, agent.getRole());
+        assertEquals("agent-admin@example.com", agent.getEmail());
+        assertEquals(UserStatus.ACTIVE, QuarkusTransaction.requiringNew()
+                .call(() -> users.findById(userId).getStatus()));
     }
 }

@@ -2,7 +2,7 @@ package com.zalamtech.diama.api.security;
 
 import com.zalamtech.diama.common.dto.AuditContext;
 import com.zalamtech.diama.domain.user.AdminUser;
-import com.zalamtech.diama.domain.user.AdminUserRepository;
+import com.zalamtech.diama.domain.user.AdminUserSyncService;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,7 +29,7 @@ public class SecurityContext {
     SecurityIdentity identity;
 
     @Inject
-    AdminUserRepository adminUsers;
+    AdminUserSyncService adminUsers;
 
     @Inject
     RoutingContext routingContext;
@@ -62,7 +62,9 @@ public class SecurityContext {
 
     /** PK {@code admin_users.id} de l'agent backoffice courant. */
     public UUID getCurrentAdminId() {
-        return adminUsers.findByKeycloakId(jwt.getSubject())
+        // Créé à la première action de l'agent ; refusé sans rôle backoffice ou si désactivé.
+        return adminUsers.getOrProvision(jwt.getSubject(), claimString("email"), claimString("name"),
+                        identity.getRoles())
                 .map(AdminUser::getId)
                 .orElseThrow(() -> new ForbiddenException("Aucun agent backoffice pour ce compte Keycloak"));
     }
