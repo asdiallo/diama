@@ -21,6 +21,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Couvre la couche de sécurité :
@@ -146,5 +149,37 @@ class SecurityLayerTest {
         assertEquals(SessionClient.MOBILE_APP, reloaded.getClient());
         assertEquals("127.0.0.1", reloaded.getIpAddress());
         assertEquals(7, reloaded.getUserId().version(), "l'ID utilisateur doit être un UUID v7");
+    }
+
+    @Test
+    void insert_if_absent_ignores_duplicate_sid_and_accepts_null_ip() {
+        final String uniq = UUID.randomUUID().toString().substring(0, 8);
+        final String sid = "sess-dup-" + uniq;
+
+        final UUID userId = QuarkusTransaction.requiringNew().call(() -> {
+            User u = User.builder()
+                    .keycloakId("kc-dup-" + uniq)
+                    .email("dup-" + uniq + "@example.com")
+                    .phone("+3361" + Long.toString(System.nanoTime() % 100000000L))
+                    .firstName("Mariama")
+                    .lastName("Bah")
+                    .countryOfResidence("FR")
+                    .build();
+            users.persist(u);
+            return u.getId();
+        });
+
+        // Deux premières requêtes concurrentes : la seconde ne doit pas violer l'unicité du sid.
+        assertTrue(QuarkusTransaction.requiringNew().call(() ->
+                sessions.insertIfAbsent(userId, sid, SessionClient.MOBILE_APP, null, null)));
+        assertFalse(QuarkusTransaction.requiringNew().call(() ->
+                sessions.insertIfAbsent(userId, sid, SessionClient.MOBILE_APP, "10.0.0.1", "ua")));
+
+        UserSession reloaded = QuarkusTransaction.requiringNew()
+                .call(() -> sessions.findByKeycloakSessionId(sid).orElseThrow());
+        assertEquals(SessionClient.MOBILE_APP, reloaded.getClient());
+        assertNull(reloaded.getIpAddress(), "la première insertion fait foi");
+        assertTrue(reloaded.getIsActive());
+        assertEquals(7, reloaded.getId().version(), "DEFAULT uuid_generate_v7() côté base");
     }
 }

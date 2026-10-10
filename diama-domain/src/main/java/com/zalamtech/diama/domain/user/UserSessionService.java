@@ -28,28 +28,18 @@ public class UserSessionService {
 
     /**
      * Crée la session si elle n'existe pas encore (idempotent sur le {@code sid}).
-     * Tolère la course de deux premières requêtes concurrentes (contrainte unique).
+     * La course de deux premières requêtes concurrentes est absorbée par
+     * {@code ON CONFLICT DO NOTHING} : un persist() échouerait au commit, hors de tout try/catch.
      */
     @Transactional
     public void recordIfAbsent(UUID userId, String keycloakSessionId, SessionClient client,
                                String ipAddress, String userAgent) {
+        // Lecture préalable : évite une tentative d'écriture à chaque requête authentifiée.
         if (keycloakSessionId == null || sessions.existsByKeycloakSessionId(keycloakSessionId)) {
             return;
         }
-        try {
-            final UserSession session = UserSession.builder()
-                    .userId(userId)
-                    .keycloakSessionId(keycloakSessionId)
-                    .client(client)
-                    .ipAddress(ipAddress)
-                    .userAgent(userAgent)
-                    .isActive(Boolean.TRUE)
-                    .lastSeenAt(OffsetDateTime.now(ZoneOffset.UTC))
-                    .build();
-            sessions.persist(session);
-        } catch (RuntimeException e) {
-            // Course concurrente probable sur keycloak_session_id (UNIQUE) : ignorable.
-            log.debug("Session déjà enregistrée pour sid={} ({})", keycloakSessionId, e.getMessage());
+        if (!sessions.insertIfAbsent(userId, keycloakSessionId, client, ipAddress, userAgent)) {
+            log.debug("Session déjà enregistrée pour sid={} (requête concurrente)", keycloakSessionId);
         }
     }
 
