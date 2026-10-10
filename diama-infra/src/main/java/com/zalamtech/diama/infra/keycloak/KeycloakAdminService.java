@@ -137,13 +137,36 @@ public class KeycloakAdminService {
             if (status == Response.Status.CONFLICT.getStatusCode()) {
                 throw RegistrationConflictException.emailTaken();
             }
-            // Le corps peut répéter des données saisies : on ne journalise que le statut.
-            log.warn("Keycloak: création d'utilisateur refusée (HTTP {})", status);
-            if (status == Response.Status.BAD_REQUEST.getStatusCode()) {
-                // Keycloak répond 400 quand le mot de passe viole la politique du realm.
+            final KeycloakError error = readError(response);
+            // Clés de message Keycloak uniquement : les params peuvent répéter des données saisies.
+            log.warn("Keycloak: création d'utilisateur refusée (HTTP {}, erreur={}, champ={})",
+                    status, error.code(), error.field());
+            if (status == Response.Status.BAD_REQUEST.getStatusCode() && error.isPasswordPolicy()) {
                 throw new WeakPasswordException("Ce mot de passe ne respecte pas les règles de sécurité");
             }
             throw new IllegalStateException("Création du compte Keycloak impossible (HTTP " + status + ")");
+        }
+    }
+
+    /**
+     * Erreur renvoyée par l'Admin API : {@code {"errorMessage": ..., "field": ...}} (validation
+     * du profil utilisateur) ou {@code {"error": ..., "error_description": ...}} (politique de mot de passe).
+     */
+    private record KeycloakError(String code, String field) {
+        boolean isPasswordPolicy() {
+            return code != null && code.startsWith("invalidPassword");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static KeycloakError readError(Response response) {
+        try {
+            final Map<String, Object> body = response.readEntity(Map.class);
+            final Object code = body.containsKey("errorMessage") ? body.get("errorMessage") : body.get("error");
+            final Object field = body.get("field");
+            return new KeycloakError(code == null ? null : code.toString(), field == null ? null : field.toString());
+        } catch (RuntimeException e) {
+            return new KeycloakError(null, null);
         }
     }
 
