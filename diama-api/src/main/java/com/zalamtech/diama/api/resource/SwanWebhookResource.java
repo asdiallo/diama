@@ -46,7 +46,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
  * asymétrique, simplifié ici en HMAC partagé par cohérence avec les autres
  * webhooks Diama). Le traitement métier est dispatché de façon asynchrone via
  * {@code kafka_outbox} (topic {@code swan-webhooks}), à l'identique de
- * {@code ThunesWebhookResource} / {@code SumsubWebhookResource}.</p>
+ * {@code ThunesWebhookResource} / {@code DiditWebhookResource}.</p>
  */
 @Slf4j
 @Path("/webhooks/swan")

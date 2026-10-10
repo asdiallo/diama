@@ -30,7 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
  *
  * <ul>
  *   <li>{@code GET  /pending}          — dossiers en attente de revue manuelle</li>
- *   <li>{@code GET  /{userId}}         — dossier KYC complet (documents resynchronisés depuis Sumsub)</li>
+ *   <li>{@code GET  /{userId}}         — dossier KYC complet (documents resynchronisés depuis Didit)</li>
  *   <li>{@code POST /{userId}/approve} — validation manuelle</li>
  *   <li>{@code POST /{userId}/reject}  — rejet avec motif</li>
  * </ul>

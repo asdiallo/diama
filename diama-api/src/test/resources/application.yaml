@@ -54,10 +54,14 @@
       webhook-secret: test-thunes-webhook-secret
     swan:
       webhook-secret: test-swan-webhook-secret
-    sumsub:
-      app-token: test-sumsub-token
-      app-secret: test-sumsub-secret
-      webhook-secret: test-sumsub-webhook-secret
+    didit:
+      api-key: test-didit-api-key
+      webhook-secret: test-didit-webhook-secret
+      workflows:
+        level-1: wf-level-1
+        level-2: wf-level-2
+        level-3: wf-level-3
+        level-4: wf-level-4
     # Tous les tests partent de 127.0.0.1 : plafonds par IP relevés pour ne pas
     # dépendre de l'ordre d'exécution ni d'un conteneur Redis réutilisé.
     registration:

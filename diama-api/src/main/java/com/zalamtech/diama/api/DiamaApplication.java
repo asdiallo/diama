@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
         tags = {
                 @Tag(name = "users", description = "Profil, bénéficiaires, appareils"),
                 @Tag(name = "transfers", description = "Devis et transferts d'argent"),
-                @Tag(name = "kyc", description = "Vérification d'identité (Sumsub)"),
+                @Tag(name = "kyc", description = "Vérification d'identité (Didit)"),
                 @Tag(name = "rates", description = "Taux de change et opérateurs de payout"),
                 @Tag(name = "admin", description = "Backoffice (kyc-agent, ops-agent, admin)"),
                 @Tag(name = "webhooks", description = "Callbacks partenaires (HMAC, sans Keycloak)")

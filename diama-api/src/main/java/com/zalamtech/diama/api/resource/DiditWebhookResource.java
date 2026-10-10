@@ -18,6 +18,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -25,33 +27,35 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
- * Réception des webhooks Sumsub (verdicts de revue KYC, documents, …).
+ * Réception des webhooks Didit v3 (changements de statut des sessions KYC).
  *
  * <p>Endpoint public (pas d'authentification Keycloak) : l'authenticité de
- * l'appelant est garantie par la vérification HMAC-SHA256 du corps de requête
- * (en-tête {@code X-App-Access-Sig}). Le traitement métier
- * ({@link com.zalamtech.diama.domain.kyc.KycService#handleSumsubWebhook}) est
+ * l'appelant est garantie par la vérification HMAC-SHA256 du corps brut
+ * (en-tête {@code X-Signature}) et par la fraîcheur de l'horodatage
+ * ({@code X-Timestamp}, ±5 minutes, anti-rejeu). Le traitement métier
+ * ({@link com.zalamtech.diama.domain.kyc.KycService#handleDiditWebhook}) est
  * dispatché de façon asynchrone via {@code kafka_outbox} (topic
- * {@code sumsub-webhooks}), à l'identique de {@code ThunesWebhookResource}.</p>
+ * {@code didit-webhooks}), à l'identique de {@code ThunesWebhookResource}.</p>
  */
 @Slf4j
-@Path("/webhooks/sumsub")
+@Path("/webhooks/didit")
 @PermitAll
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "webhooks")
-public class SumsubWebhookResource {
+public class DiditWebhookResource {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
-    private static final String TOPIC = "sumsub-webhooks";
+    private static final String TOPIC = "didit-webhooks";
     private static final String AGGREGATE_TYPE = "KYC";
+    /** Tolérance sur X-Timestamp, conforme à la recommandation Didit. */
+    private static final long MAX_CLOCK_SKEW_SECONDS = 300;
 
     @Inject
     KycProfileRepository kycProfiles;
@@ -62,46 +66,64 @@ public class SumsubWebhookResource {
     @Inject
     ObjectMapper objectMapper;
 
-    @ConfigProperty(name = "diama.sumsub.webhook-secret")
+    @ConfigProperty(name = "diama.didit.webhook-secret")
     String webhookSecret;
 
-    @Operation(summary = "Webhook Sumsub (signature HMAC, traitement asynchrone)")
+    @Operation(summary = "Webhook Didit (signature HMAC + horodatage, traitement asynchrone)")
     @POST
     @Transactional
-    public Response receive(String rawBody, @HeaderParam("X-App-Access-Sig") String signature) {
+    public Response receive(String rawBody,
+                            @HeaderParam("X-Signature") String signature,
+                            @HeaderParam("X-Timestamp") String timestamp) {
+        if (!isFresh(timestamp)) {
+            log.warn("Webhook Didit rejeté : X-Timestamp absent ou hors tolérance ({})", timestamp);
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
         if (!isValidSignature(rawBody, signature)) {
-            log.warn("Webhook Sumsub rejeté : signature HMAC invalide");
+            log.warn("Webhook Didit rejeté : signature HMAC invalide");
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         if (rawBody == null || rawBody.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
-        final UUID aggregateId = resolveApplicantId(rawBody)
-                .flatMap(kycProfiles::findBySumsubApplicantId)
+        final UUID aggregateId = resolveSessionId(rawBody)
+                .flatMap(kycProfiles::findByDiditSessionId)
                 .map(KycProfile::getId)
                 .orElseGet(UUID::randomUUID);
 
         outbox.persist(KafkaOutbox.builder()
                 .aggregateId(aggregateId)
                 .aggregateType(AGGREGATE_TYPE)
-                .eventType("SUMSUB_WEBHOOK")
+                .eventType("DIDIT_WEBHOOK")
                 .payload(rawBody)
                 .kafkaTopic(TOPIC)
                 .status(OutboxStatus.PENDING)
                 .build());
 
-        log.info("Webhook Sumsub enfilé (aggregateId={})", aggregateId);
+        log.info("Webhook Didit enfilé (aggregateId={})", aggregateId);
         return Response.ok().build();
     }
 
-    private Optional<String> resolveApplicantId(String rawBody) {
+    private Optional<String> resolveSessionId(String rawBody) {
         try {
-            final JsonNode node = objectMapper.readTree(rawBody).path("applicantId");
+            final JsonNode node = objectMapper.readTree(rawBody).path("session_id");
             return node.isTextual() ? Optional.of(node.asText()) : Optional.empty();
         } catch (Exception e) {
-            log.warn("Corps de webhook Sumsub illisible pour extraction d'applicantId", e);
+            log.warn("Corps de webhook Didit illisible pour extraction de session_id", e);
             return Optional.empty();
+        }
+    }
+
+    private static boolean isFresh(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return false;
+        }
+        try {
+            final long skew = Math.abs(Instant.now().getEpochSecond() - Long.parseLong(timestamp.trim()));
+            return skew <= MAX_CLOCK_SKEW_SECONDS;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 
@@ -118,7 +140,7 @@ public class SumsubWebhookResource {
                     computedHex.getBytes(StandardCharsets.UTF_8),
                     signature.trim().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            log.error("Vérification de signature Sumsub impossible", e);
+            log.error("Vérification de signature Didit impossible", e);
             return false;
         }
     }

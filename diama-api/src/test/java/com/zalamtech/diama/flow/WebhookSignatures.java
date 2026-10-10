@@ -12,7 +12,7 @@ import java.util.HexFormat;
 final class WebhookSignatures {
 
     static final String THUNES_SECRET = "test-thunes-webhook-secret";
-    static final String SUMSUB_SECRET = "test-sumsub-webhook-secret";
+    static final String DIDIT_SECRET = "test-didit-webhook-secret";
     static final String SWAN_SECRET = "test-swan-webhook-secret";
 
     private WebhookSignatures() {

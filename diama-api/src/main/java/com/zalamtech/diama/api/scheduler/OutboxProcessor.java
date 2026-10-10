@@ -69,8 +69,8 @@ public class OutboxProcessor {
     Emitter<String> rateUpdated;
 
     @Inject
-    @Channel("sumsub-webhooks-out")
-    Emitter<String> sumsubWebhooks;
+    @Channel("didit-webhooks-out")
+    Emitter<String> diditWebhooks;
 
     @Inject
     @Channel("swan-webhooks-out")
@@ -147,7 +147,7 @@ public class OutboxProcessor {
             case "thunes-callbacks" -> thunesCallbacks;
             case "audit-events" -> auditEvents;
             case "rate-updated" -> rateUpdated;
-            case "sumsub-webhooks" -> sumsubWebhooks;
+            case "didit-webhooks" -> diditWebhooks;
             case "swan-webhooks" -> swanWebhooks;
             default -> throw new IllegalStateException("Topic outbox non configuré : " + topic);
         };

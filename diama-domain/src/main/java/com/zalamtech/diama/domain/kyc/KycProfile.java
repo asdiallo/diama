@@ -37,8 +37,9 @@ public class KycProfile extends BaseEntity {
     @Column(name = "kyc_level", nullable = false)
     private Short kycLevel = 1;
 
-    @Column(name = "sumsub_applicant_id", unique = true, length = 100)
-    private String sumsubApplicantId;
+    /** Dernière session de vérification Didit lancée pour ce profil. */
+    @Column(name = "didit_session_id", unique = true, length = 100)
+    private String diditSessionId;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

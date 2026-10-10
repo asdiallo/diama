@@ -23,7 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
  * Parcours KYC de l'utilisateur connecté (rôle {@code user}).
  *
  * <ul>
- *   <li>{@code POST /init}   — initialise (ou reprend) le parcours, renvoie le jeton SDK Sumsub</li>
+ *   <li>{@code POST /init}   — initialise (ou reprend) le parcours, renvoie la session de vérification Didit</li>
  *   <li>{@code GET  /status} — statut et niveau KYC courants</li>
  * </ul>
  */
@@ -43,7 +43,7 @@ public class KycResource {
     @Inject
     JsonWebToken jwt;
 
-    @Operation(summary = "Initialisation du parcours KYC (jeton SDK Sumsub)")
+    @Operation(summary = "Initialisation du parcours KYC (session Didit)")
     @POST
     @Path("/init")
     public KycInitDto init() {

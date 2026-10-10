@@ -1,20 +1,19 @@
 package com.zalamtech.diama.common.dto;
 
-import java.time.OffsetDateTime;
-
 /**
- * Réponse à l'initialisation du parcours KYC : jeton Sumsub à passer au SDK
- * mobile (durée de vie 30 minutes).
+ * Réponse à l'initialisation du parcours KYC : session de vérification Didit
+ * à ouvrir côté mobile (SDK natif via {@code sessionToken}, ou WebView /
+ * navigateur via {@code verificationUrl}).
  *
- * @param applicantId identifiant Sumsub de l'applicant (corrélation webhook)
- * @param sumsubToken jeton d'accès SDK Sumsub
- * @param levelName   niveau Sumsub ciblé par cette session de vérification
- * @param expiresAt   échéance du jeton
+ * @param sessionId       identifiant de la session Didit (corrélation webhook)
+ * @param sessionToken    jeton de session pour les SDK natifs Didit (courte durée)
+ * @param verificationUrl URL hébergée du parcours de vérification
+ * @param targetLevel     niveau KYC visé par cette session (1 à 4)
  */
 public record KycInitDto(
-        String applicantId,
-        String sumsubToken,
-        String levelName,
-        OffsetDateTime expiresAt
+        String sessionId,
+        String sessionToken,
+        String verificationUrl,
+        int targetLevel
 ) {
 }

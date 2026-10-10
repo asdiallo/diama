@@ -33,7 +33,7 @@ public class KafkaHealthCheck implements HealthCheck {
     private static final List<String> DIAMA_GROUPS = List.of(
             "diama-transfer-events", "diama-kyc-events", "diama-notifications",
             "diama-thunes-callbacks", "diama-rate-updated", "diama-audit-events",
-            "diama-sumsub-webhooks", "diama-swan-webhooks");
+            "diama-didit-webhooks", "diama-swan-webhooks");
     private static final long TIMEOUT_SECONDS = 2;
 
     @ConfigProperty(name = "kafka.bootstrap.servers", defaultValue = "localhost:9092")

@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * Démarre un serveur WireMock unique portant les stubs des trois partenaires
- * (Thunes, Sumsub, Swan) et pointe les REST clients Quarkus dessus.
+ * (Thunes, Didit, Swan) et pointe les REST clients Quarkus dessus.
  *
  * <p>À utiliser avec {@code @QuarkusTestResource(value = ..., restrictToAnnotatedClass = true)}
  * pour ne pas imposer un redémarrage de l'application aux autres classes de test.</p>
@@ -23,12 +23,12 @@ public class PartnerApisWireMockResource implements QuarkusTestResourceLifecycle
         server.start();
 
         ThunesClientMock.install(server);
-        SumsubClientMock.install(server);
+        DiditClientMock.install(server);
         SwanClientMock.install(server);
 
         return Map.of(
                 "quarkus.rest-client.thunes-api.url", server.baseUrl(),
-                "quarkus.rest-client.sumsub-api.url", server.baseUrl(),
+                "quarkus.rest-client.didit-api.url", server.baseUrl(),
                 "quarkus.rest-client.swan-api.url", server.baseUrl());
     }
 

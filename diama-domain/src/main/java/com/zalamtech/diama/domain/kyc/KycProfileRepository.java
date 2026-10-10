@@ -18,8 +18,8 @@ public class KycProfileRepository implements PanacheRepositoryBase<KycProfile, U
         return find("userId", userId).firstResultOptional();
     }
 
-    public Optional<KycProfile> findBySumsubApplicantId(String sumsubApplicantId) {
-        return find("sumsubApplicantId", sumsubApplicantId).firstResultOptional();
+    public Optional<KycProfile> findByDiditSessionId(String diditSessionId) {
+        return find("diditSessionId", diditSessionId).firstResultOptional();
     }
 
     /** Dossiers en attente de revue manuelle, les plus anciens d'abord (file ops). */

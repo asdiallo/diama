@@ -1,9 +1,9 @@
 package com.zalamtech.diama.mock;
 
-import com.zalamtech.diama.common.dto.SumsubReviewResult;
 import com.zalamtech.diama.domain.exchange.ThunesPayer;
-import com.zalamtech.diama.domain.kyc.SumsubApplicant;
-import com.zalamtech.diama.domain.kyc.SumsubGateway;
+import com.zalamtech.diama.domain.kyc.DiditDocument;
+import com.zalamtech.diama.domain.kyc.DiditGateway;
+import com.zalamtech.diama.domain.kyc.DiditSession;
 import com.zalamtech.diama.domain.transaction.ThunesTransferGateway;
 import com.zalamtech.diama.domain.transaction.ThunesTransferResult;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -16,7 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Exerce les adaptateurs REST réels ({@code ThunesClient}, {@code SumsubClient})
+ * Exerce les adaptateurs REST réels ({@code ThunesClient}, {@code DiditClient})
  * contre des stubs WireMock : sérialisation des requêtes, désérialisation des
  * réponses et mapping transport → domaine — ce que les mocks de port des tests
  * de flux ne couvrent pas.
@@ -29,7 +29,7 @@ class PartnerClientsWireMockTest {
     ThunesTransferGateway thunes;
 
     @Inject
-    SumsubGateway sumsub;
+    DiditGateway didit;
 
     @Test
     void thunes_payers_are_fetched_and_mapped_to_domain() {
@@ -53,18 +53,22 @@ class PartnerClientsWireMockTest {
     }
 
     @Test
-    void sumsub_applicant_creation_and_token() {
-        final SumsubApplicant applicant = sumsub.createApplicant("user-ext-1", "basic-kyc-level");
-        assertEquals(SumsubClientMock.APPLICANT_ID, applicant.applicantId());
+    void didit_session_is_created_and_mapped() {
+        final DiditSession session = didit.createSession("wf-level-1", "user-ext-1");
 
-        assertEquals(SumsubClientMock.SDK_TOKEN, sumsub.generateAccessToken(applicant.applicantId()));
+        assertEquals(DiditClientMock.SESSION_ID, session.sessionId());
+        assertEquals(DiditClientMock.SESSION_TOKEN, session.sessionToken());
+        assertEquals(DiditClientMock.SESSION_URL, session.url());
     }
 
     @Test
-    void sumsub_review_status_is_parsed() {
-        final SumsubReviewResult status = sumsub.getApplicantStatus(SumsubClientMock.APPLICANT_ID);
+    void didit_decision_documents_are_parsed() {
+        final List<DiditDocument> documents = didit.getDocuments(DiditClientMock.SESSION_ID);
 
-        assertEquals("completed", status.reviewStatus());
-        assertEquals("GREEN", status.reviewAnswer());
+        assertEquals(1, documents.size());
+        assertEquals("id_verification_1", documents.get(0).nodeId());
+        assertEquals("Passport", documents.get(0).documentType());
+        assertEquals("FRA", documents.get(0).issuingState());
+        assertEquals("Approved", documents.get(0).status());
     }
 }

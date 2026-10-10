@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 /**
- * Correspondance niveau KYC Diama (1 à 4) ↔ niveau Sumsub / plafond mensuel.
+ * Plafond mensuel par niveau KYC Diama (1 à 4). Le workflow Didit de chaque
+ * niveau est configuré dans {@link KycWorkflows}.
  *
  * <p>Les plafonds reflètent les valeurs de départ de {@code system_config}
  * ({@code kyc_levelN_monthly_limit}) ; le niveau 4 n'y est pas seedé (accès
@@ -12,12 +13,6 @@ import java.util.Map;
  * devraient être lues depuis {@code system_config} plutôt que codées en dur.</p>
  */
 final class KycLevels {
-
-    private static final Map<Integer, String> SUMSUB_LEVEL_NAMES = Map.of(
-            1, "basic-kyc-level",
-            2, "standard-kyc-level",
-            3, "enhanced-kyc-level",
-            4, "full-kyc-level");
 
     private static final Map<Integer, BigDecimal> MONTHLY_LIMITS = Map.of(
             1, new BigDecimal("300"),
@@ -28,10 +23,6 @@ final class KycLevels {
     static final int MAX_LEVEL = 4;
 
     private KycLevels() {
-    }
-
-    static String sumsubLevelName(int level) {
-        return SUMSUB_LEVEL_NAMES.getOrDefault(clamp(level), SUMSUB_LEVEL_NAMES.get(1));
     }
 
     static BigDecimal monthlyLimit(int level) {

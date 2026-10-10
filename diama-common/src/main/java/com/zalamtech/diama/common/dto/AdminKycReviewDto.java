@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * Dossier KYC vu du backoffice : synthèse pour la file d'attente
  * ({@code GET /pending}, {@code documents} vide) ou dossier complet
- * ({@code GET /{userId}}, {@code documents} peuplé depuis Sumsub).
+ * ({@code GET /{userId}}, {@code documents} peuplé depuis Didit).
  *
  * @param kycProfileId       PK {@code kyc_profiles.id}
  * @param userId             PK {@code users.id}
@@ -17,7 +17,7 @@ import java.util.UUID;
  * @param kycLevel            niveau courant
  * @param verificationStatus  statut de vérification
  * @param riskCategory        {@code LOW} | {@code MEDIUM} | {@code HIGH}
- * @param sumsubApplicantId   identifiant Sumsub de l'applicant
+ * @param diditSessionId      identifiant de la dernière session Didit
  * @param rejectionReason     motif de rejet, si applicable
  * @param monthlyLimit        plafond mensuel courant
  * @param createdAt           date de création du profil KYC
@@ -32,7 +32,7 @@ public record AdminKycReviewDto(
         int kycLevel,
         String verificationStatus,
         String riskCategory,
-        String sumsubApplicantId,
+        String diditSessionId,
         String rejectionReason,
         BigDecimal monthlyLimit,
         OffsetDateTime createdAt,

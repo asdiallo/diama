@@ -16,7 +16,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** Document justificatif KYC rattaché à un profil (source Sumsub). */
+/** Document justificatif KYC rattaché à un profil (source Didit). */
 @Entity
 @Table(name = "kyc_documents")
 @Data
@@ -33,8 +33,9 @@ public class KycDocument extends BaseEntity {
     @Column(name = "doc_type", nullable = false, columnDefinition = "doc_type")
     private DocType docType;
 
-    @Column(name = "sumsub_doc_id", length = 100)
-    private String sumsubDocId;
+    /** {@code "<session_id>:<node_id>"} Didit (le node_id n'est unique qu'au sein d'une session). */
+    @Column(name = "didit_document_id", length = 150)
+    private String diditDocumentId;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

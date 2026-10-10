@@ -4,7 +4,7 @@ Plateforme de transfert d'argent **Europe ↔ Afrique de l'Ouest**.
 
 Backend Java 21 / Quarkus 3.x (natif GraalVM) — PostgreSQL 16, Redis, Kafka
 (pattern outbox), Keycloak 24 (OIDC, realm `diama-transfer-app`), Thunes v2 (payout),
-Swan.io (collecte EUR, IBAN dédiés), Sumsub (KYC).
+Swan.io (collecte EUR, IBAN dédiés), Didit (KYC).
 
 ## Prérequis
 
@@ -67,7 +67,7 @@ L'authentification (dev et phase pilote prod) passe par le Keycloak mutualisé
 - **Unitaires / intégration** (`@QuarkusTest` + DevServices Postgres/Redis) :
   FSM, frais, taux (cache Redis), devis (TTL 15 min), sécurité par rôle.
 - **Flux de bout en bout** (`*FlowIT`) : transfert complet (inscription →
-  devis → collecte Swan → payout Thunes → DELIVERED), montée KYC (Sumsub →
+  devis → collecte Swan → payout Thunes → DELIVERED), montée KYC (Didit →
   Keycloak + provisionnement Swan), cycle RFI. Les webhooks sont signés HMAC
   et les sauts Kafka rejoués via l'outbox (broker non requis).
-- **WireMock** : adaptateurs REST Thunes/Sumsub exercés contre stubs HTTP.
+- **WireMock** : adaptateurs REST Thunes/Didit exercés contre stubs HTTP.

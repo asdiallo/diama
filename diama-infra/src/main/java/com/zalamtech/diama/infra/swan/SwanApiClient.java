@@ -31,7 +31,7 @@ import java.util.List;
  *
  * <p>Simplifié en REST : l'API Swan réelle (comptes, virements) est en
  * pratique GraphQL — modélisée ici en REST par cohérence avec le reste de
- * l'intégration ({@code ThunesApiClient}, {@code SumsubApiClient}), les
+ * l'intégration ({@code ThunesApiClient}, {@code DiditApiClient}), les
  * webhooks Swan restant eux authentiquement REST.</p>
  */
 @RegisterRestClient(configKey = "swan-api")

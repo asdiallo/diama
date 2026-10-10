@@ -16,7 +16,7 @@ public class KycDocumentRepository implements PanacheRepositoryBase<KycDocument,
         return find("kycProfileId", Sort.by("createdAt").descending(), kycProfileId).list();
     }
 
-    public Optional<KycDocument> findByKycProfileIdAndSumsubDocId(UUID kycProfileId, String sumsubDocId) {
-        return find("kycProfileId = ?1 and sumsubDocId = ?2", kycProfileId, sumsubDocId).firstResultOptional();
+    public Optional<KycDocument> findByKycProfileIdAndDiditDocumentId(UUID kycProfileId, String diditDocumentId) {
+        return find("kycProfileId = ?1 and diditDocumentId = ?2", kycProfileId, diditDocumentId).firstResultOptional();
     }
 }
